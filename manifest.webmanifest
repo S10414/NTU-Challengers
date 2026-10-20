@@ -1,0 +1,17 @@
+{
+  "name": "顯影",
+  "short_name": "顯影",
+  "description": "每天一個隨機的時刻，拍下現在。只有你看得到。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#B8B4AC",
+  "theme_color": "#B8B4AC",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

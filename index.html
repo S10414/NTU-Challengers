@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>顯影</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#B8B4AC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="顯影">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./vendor/lenis.css">
+<style>
+  :root{
+    --card:#B8B4AC; --paper:#ECE8DF; --paper-2:#DCD7CC;
+    --ink:#1B1A18; --ink-2:#5C5850; --ink-3:#86817A;
+    --safe:#A8362A; --line:rgba(27,26,24,.16);
+    --serif:"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--card);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+  button,input,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  img{display:block}
+
+  /* 視覺層：底片質感背景、安全燈、顯影照片 */
+  #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0;transition:opacity .6s ease}
+  #bg.on{opacity:1}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .fx-photo{display:block;opacity:0;max-width:100%}
+  .fx-safe{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+  #app{position:relative;z-index:1;max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;padding:max(22px,env(safe-area-inset-top)) 22px 10px}
+  header.top h1{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:.08em;margin:0}
+  header.top .date{font-size:13px;color:var(--ink-2)}
+  main{flex:1;padding:6px 22px 110px}
+
+  nav.tabs{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;
+    display:flex;background:var(--card);border-top:1px solid var(--line);
+    padding:8px 10px max(14px,env(safe-area-inset-bottom))}
+  nav.tabs button{flex:1;background:none;border:0;padding:10px 4px 14px;font-size:14px;color:var(--ink-3);position:relative;letter-spacing:.04em}
+  nav.tabs button.on{color:var(--ink)}
+  #navdot{position:absolute;left:0;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 6px);width:4px;height:4px;border-radius:50%;background:var(--ink);pointer-events:none}
+
+  .paper{background:var(--paper);padding:14px 16px;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.04);margin-bottom:10px}
+  .muted{color:var(--ink-2)} .small{font-size:13px}
+  p.lead{font-family:var(--serif);font-size:17px;line-height:1.85;margin:6px 0 14px}
+
+  .btn{display:inline-block;padding:11px 16px;border:1px solid var(--ink);background:transparent;border-radius:2px;font-size:15px;line-height:1;text-align:center}
+  .btn.fill{background:var(--ink);color:var(--paper)}
+  .btn.wide{width:100%;padding:14px 16px}
+  .btn:disabled{opacity:.45;cursor:default}
+  .link{background:none;border:0;padding:0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;font-size:13px}
+
+  .notice{background:var(--paper);border-left:2px solid var(--safe);padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--ink-2)}
+  .notice .btn{margin-top:10px;padding:9px 14px;font-size:14px}
+
+  .moment{border-radius:3px;margin:8px 0 18px;text-align:left;width:100%;border:0}
+  .moment.wait{background:var(--paper);padding:16px}
+  .moment.wait .t{font-family:var(--serif);font-size:18px;margin:0 0 4px}
+  .moment.now{background:var(--safe);color:var(--paper);padding:26px 18px 22px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .moment.now .t{font-family:var(--serif);font-size:30px;letter-spacing:.06em;margin:0 0 6px;font-weight:600}
+  .moment.now .s{font-size:14px;opacity:.9}
+  .moment.done{background:var(--paper-2);padding:14px 16px;color:var(--ink-2);font-family:var(--serif);font-size:16px}
+  .row{display:flex;gap:10px;align-items:center;margin:0 0 18px}
+  .entry{display:flex;gap:12px;align-items:flex-start}
+  .entry .th{width:64px;height:64px;flex:none;background:var(--paper-2);border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+  .entry .th img{width:100%;height:100%;object-fit:cover}
+  .entry .line{font-family:var(--serif);font-size:16px;line-height:1.6;margin:0 0 4px}
+  .entry .meta{font-size:12px;color:var(--ink-3)}
+  .entry button{all:unset;cursor:pointer;display:flex;gap:12px;align-items:flex-start;width:100%}
+  .empty{font-family:var(--serif);color:var(--ink-2);font-size:16px;line-height:1.8;padding:10px 0}
+
+  .weekhead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px}
+  .weekhead .rng{font-family:var(--serif);font-size:18px}
+  .weekhead button{background:none;border:1px solid var(--line);width:34px;height:34px;border-radius:50%;font-size:16px;color:var(--ink-2)}
+  .sheet{border-top:1px solid var(--line)}
+  .day{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .day .lab{width:34px;flex:none;font-family:var(--serif);font-size:15px;line-height:1.2;padding-top:6px}
+  .day .lab small{display:block;font-family:var(--sans);font-size:11px;color:var(--ink-3);margin-top:2px}
+  .day .thumbs{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-height:40px;align-items:center}
+  .day .none{color:var(--ink-3);font-size:13px;padding-left:4px}
+  .th2{width:62px;height:62px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08);background:var(--paper-2);padding:0;overflow:hidden}
+  .th2 img{width:100%;height:100%;object-fit:cover}
+  .th2.txt{font-family:var(--serif);font-size:11px;line-height:1.3;color:var(--ink-2);padding:5px;text-align:left;display:flex;align-items:flex-end;background:var(--paper)}
+  .th2.today{outline:2px solid var(--ink);outline-offset:1px}
+
+  .print{background:var(--paper);padding:18px 18px 14px;border-radius:2px;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.05);margin-bottom:14px}
+  .print .txt{font-family:var(--serif);font-size:18px;line-height:1.85;margin:0 0 10px}
+  .print .when{font-size:12px;color:var(--ink-3);margin-bottom:12px}
+  .print .fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .print .fb .btn{padding:8px 12px;font-size:13px}
+  .print .fb .chosen{font-size:13px;color:var(--ink-2)}
+  .print textarea{width:100%;margin-top:10px;background:transparent;border:0;border-bottom:1px solid var(--ink-3);padding:6px 0;resize:none;font-family:var(--serif);font-size:15px;line-height:1.6}
+  .print .reply{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin-top:10px;padding-left:10px;border-left:2px solid var(--ink-3)}
+  .status{font-family:var(--serif);font-size:16px;line-height:1.8;color:var(--ink-2);margin:0 0 14px}
+
+  .ov{position:fixed;inset:0;z-index:50;overflow:auto;display:none}
+  .ov.show{display:block}
+  .ov .in{max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:max(22px,env(safe-area-inset-top)) 22px max(22px,env(safe-area-inset-bottom))}
+  .ov.cap{background:var(--safe);color:var(--paper)}
+  .ov.cap .in{position:relative;z-index:1}
+  .ov.cap .top{display:flex;justify-content:space-between;align-items:baseline}
+  .ov.cap .top .link{color:var(--paper);opacity:.85}
+  .ov.cap .now{font-family:var(--serif);font-size:34px;font-weight:600;letter-spacing:.06em;margin:22px 0 0}
+  .ov.cap .cd{font-family:var(--serif);font-size:56px;font-variant-numeric:tabular-nums;line-height:1;margin:6px 0 4px}
+  .ov.cap .cd.late{opacity:.6}
+  .ov.cap .latemsg{font-size:14px;opacity:.9;min-height:20px;margin-bottom:18px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 22px}
+  .chip{background:transparent;border:1px solid rgba(236,232,223,.7);color:var(--paper);border-radius:999px;padding:8px 14px;font-size:14px}
+  .chip.on{background:var(--paper);color:var(--safe);border-color:var(--paper)}
+  .camlab{display:block;border:1px solid rgba(236,232,223,.8);border-radius:2px;padding:16px;text-align:center;font-size:16px;cursor:pointer;margin-bottom:14px}
+  .camlab input{position:absolute;width:1px;height:1px;opacity:0}
+  .prev{background:rgba(0,0,0,.18);margin-bottom:14px;max-height:42vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .prev img{max-width:100%;max-height:42vh;object-fit:contain}
+  .ov.cap input.line{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(236,232,223,.7);padding:10px 0;font-family:var(--serif);font-size:18px;color:var(--paper);margin-bottom:22px}
+  .ov.cap input.line::placeholder{color:rgba(236,232,223,.55)}
+  .ov.cap .btn.paper{background:var(--paper);color:var(--safe);border-color:var(--paper)}
+
+  .ov.dark{background:var(--ink);color:var(--paper)}
+  .ov.dark .link{color:var(--paper);opacity:.8}
+  .ov.dark .big{margin:18px 0;padding:10px;display:flex;justify-content:center}
+  .ov.dark .big .fx-photo,.ov.dark .big .fx-photo-fb{box-shadow:0 0 0 10px var(--paper)}
+  .ov.dark .big img{width:100%;max-height:62vh;object-fit:contain;background:#000}
+  .ov.dark .line{font-family:var(--serif);font-size:20px;line-height:1.7;margin:0 0 8px}
+  .ov.dark .meta{font-size:13px;opacity:.7;margin-bottom:26px}
+
+  .ov.slide{background:#000;color:var(--paper);cursor:pointer}
+  .ov.slide .in{padding:0;justify-content:center;position:relative}
+  .ov.slide img{width:100%;max-height:100dvh;object-fit:contain}
+  .ov.slide .cap{position:absolute;left:0;right:0;bottom:0;padding:22px calc(22px + env(safe-area-inset-left)) max(22px,env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.6))}
+  .ov.slide .cap .line{font-family:var(--serif);font-size:20px;margin:0 0 4px}
+  .ov.slide .cap .meta{font-size:13px;opacity:.75}
+  .ov.slide .bar{position:absolute;top:0;left:0;height:2px;background:var(--paper);width:0;z-index:2}
+  .ov.slide .stage{display:flex;align-items:center;justify-content:center;width:100%;height:100dvh}
+
+  .ov.sheet2{background:var(--card)}
+  .ov.sheet2 h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0 0 4px}
+  .ov.sheet2 .grp{margin:26px 0 0}
+  .ov.sheet2 .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
+  .ov.sheet2 .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
+  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text]{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
+
+  .onb h1{font-family:var(--serif);font-size:44px;font-weight:600;letter-spacing:.1em;margin:60px 0 26px}
+  .onb p{font-family:var(--serif);font-size:17px;line-height:1.9;margin:0 0 6px}
+  .onb label{display:block;margin:38px 0 8px;font-size:13px;color:var(--ink-2)}
+  .onb input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);padding:10px 0;font-family:var(--serif);font-size:20px;margin-bottom:34px}
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div id="app">
+  <header class="top"><h1>顯影</h1><span class="date" id="hdate"></span></header>
+  <main id="view"></main>
+  <nav class="tabs" id="tabs">
+    <button data-act="nav" data-v="today">今天</button>
+    <button data-act="nav" data-v="week">這週</button>
+    <button data-act="nav" data-v="agent">顯影</button>
+    <i id="navdot" aria-hidden="true"></i>
+  </nav>
+</div>
+<div class="ov cap" id="ovCap" data-lenis-prevent><div class="in" id="capBody"></div></div>
+<div class="ov dark" id="ovEntry" data-lenis-prevent></div>
+<div class="ov slide" id="ovSlide" data-lenis-prevent></div>
+<div class="ov sheet2" id="ovSet" data-lenis-prevent></div>
+
+<script src="./vendor/gsap.min.js"></script>
+<script src="./vendor/lenis.min.js"></script>
+<script src="./fx.js"></script>
+<script>
+/* ---------- 基本 ---------- */
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const WD=['日','一','二','三','四','五','六'];
+const dkey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=d=>`${d.getMonth()+1}月${d.getDate()}日 週${WD[d.getDay()]}`;
+const fmtTime=ts=>{const d=new Date(ts);return `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const parseD=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+
+const S={view:'today',entries:[],agentLog:[],agentMeta:{},settings:null,moment:null,cap:null,
+         weekOff:0,busy:false,err:'',freshId:null,dayKey:dkey(new Date()),installEvt:null,notif:(window.Notification?Notification.permission:'unsupported')};
+const THEMES=()=>[{k:'daily',n:'日常'},{k:'people',n:'身邊的人'},{k:'place',n:'所在之處'},{k:'habit',n:(S.settings&&S.settings.habit)||'習慣'}];
+const themeName=k=>(THEMES().find(t=>t.k===k)||{}).n||k;
+
+/* ---------- 視覺層（fx.js）。沒載入時退回最簡版本，App 照常可用 ---------- */
+const fx=window.FX||{
+  ov:{show(el){el.classList.add('show')},hide(el,done){if(!el.classList.contains('show'))return;el.classList.remove('show');done&&done()}},
+  enter(){},develop(){},pulse(){},nav(){window.scrollTo(0,0)},
+  navDot(v){const dot=$('#navdot'),b=document.querySelector(`#tabs button[data-v="${v}"]`);if(!dot||!b||!b.offsetWidth)return false;dot.style.transform=`translateX(${b.offsetLeft+b.offsetWidth/2-2}px)`;return true},
+  photo:{mount(host,o){const img=document.createElement('img');img.alt=(o&&o.label)||'照片';host.appendChild(img);return{setImage:async s=>{img.src=s},develop(){},setProg(){},fit(){},destroy(){img.remove()}}}},
+  safelight:{mount(){return null}}
+};
+
+/* ---------- IndexedDB ---------- */
+const DB='xianying';
+let dbp=null;
+function db(){
+  if(dbp) return dbp;
+  dbp=new Promise((res,rej)=>{
+    const r=indexedDB.open(DB,1);
+    r.onupgradeneeded=()=>{ const d=r.result;
+      if(!d.objectStoreNames.contains('entries')) d.createObjectStore('entries',{keyPath:'id'});
+      if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+    };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+  return dbp;
+}
+async function tx(store,mode,fn){
+  const d=await db();
+  return new Promise((res,rej)=>{
+    const t=d.transaction(store,mode), s=t.objectStore(store); let out;
+    out=fn(s); t.oncomplete=()=>res(out&&'result' in out?out.result:out); t.onerror=()=>rej(t.error);
+  });
+}
+const kvGet=async k=>{ try{ return await tx('kv','readonly',s=>s.get(k)) }catch{ return undefined } };
+const kvSet=async (k,v)=>{ try{ await tx('kv','readwrite',s=>s.put(v,k)) }catch(e){ console.error('save failed',e) } };
+const kvDel=async k=>{ try{ await tx('kv','readwrite',s=>s.delete(k)) }catch{} };
+const allEntries=async()=>{ try{ return (await tx('entries','readonly',s=>s.getAll()))||[] }catch{ return [] } };
+const putEntry=async e=>{ try{ await tx('entries','readwrite',s=>s.put(e)) }catch(err){ console.error('save failed',err); alert('存不進去，可能是空間不足。') } };
+const delEntry=async id=>{ try{ await tx('entries','readwrite',s=>s.delete(id)) }catch{} };
+const clearEntries=async()=>{ try{ await tx('entries','readwrite',s=>s.clear()) }catch{} };
+
+async function load(){
+  S.settings=await kvGet('settings')||null;
+  S.entries=(await allEntries()).sort((a,b)=>a.ts-b.ts);
+  S.agentLog=await kvGet('agentLog')||[];
+  S.agentMeta=await kvGet('agentMeta')||{};
+  await ensureMoment();
+}
+
+/* ---------- 今天的時刻 ---------- */
+async function ensureMoment(){
+  const k='moment:'+dkey(new Date());
+  let m=await kvGet(k);
+  if(!m){
+    const now=new Date(), start=new Date(now), end=new Date(now);
+    start.setHours(9,0,0,0); end.setHours(22,0,0,0);
+    let at=null;
+    if(now<end){ const lo=Math.max(now.getTime()+90e3,start.getTime()); at=Math.round(lo+Math.random()*(end.getTime()-lo)); }
+    m={at,notified:false}; await kvSet(k,m);
+  }
+  S.moment=m;
+}
+const momentDone=()=>{const t=dkey(new Date());return S.entries.some(e=>e.moment&&e.date===t)};
+
+/* 開著或剛切到背景時，時刻到了就送通知 */
+async function tickMoment(){
+  const m=S.moment; if(!m||!m.at||m.notified) return;
+  if(Date.now()<m.at) return;
+  m.notified=true; await kvSet('moment:'+dkey(new Date()),m);
+  if(momentDone()) return;
+  if(window.Notification&&Notification.permission==='granted'){
+    try{ const reg=await navigator.serviceWorker.ready; reg.active&&reg.active.postMessage({type:'moment',day:dkey(new Date())}); }catch(e){ console.error(e) }
+  }
+}
+
+/* ---------- 畫面 ---------- */
+let dotView=null, lastBanner='';
+function bannerSig(){ const m=S.moment||{}; return momentDone()?'done':(m.at&&Date.now()>=m.at?'now':(m.at?'wait':'past')) }
+/* o.enter：換頁/第一次進場才播進場動畫；其他重繪（按回饋、更新時間）一律靜默，避免一直重播 */
+function render(o){
+  o=o||{};
+  $('#hdate').textContent=fmtDate(new Date());
+  if(!S.settings){ $('#tabs').style.display='none'; $('#view').innerHTML=viewOnboard(); if(o.enter) fx.enter($('#view')); return; }
+  $('#tabs').style.display='';
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  if(!o.nav&&dotView!==S.view&&fx.navDot(S.view,true)) dotView=S.view;
+  $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewAgent();
+  if(o.enter) fx.enter($('#view'));
+  fx.pulse(S.busy&&S.view==='agent'?$('#view .status'):null);
+  if(S.view==='agent'){ const f=$('#view [data-fresh] .txt'); if(f){ S.freshId=null; fx.develop(f) } }
+  lastBanner=bannerSig();
+}
+function viewOnboard(){
+  return `<div class="onb">
+    <h1>顯影</h1>
+    <p>每天一個隨機的時刻，拍下現在。</p>
+    <p>只有你看得到。沒有讚，沒有追蹤，沒有連續天數。</p>
+    <p>它會慢慢看，只在看見什麼的時候才說話。</p>
+    <label for="habit">除了日常，你想記的一個習慣</label>
+    <input id="habit" value="健身" maxlength="8">
+    <button class="btn fill wide" data-act="onboard">開始</button>
+  </div>`;
+}
+function notices(){
+  let out='';
+  const standalone=matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  if(!standalone){
+    if(S.installEvt) out+=`<div class="notice">裝到主畫面才收得到通知。<br><button class="btn" data-act="install">加到主畫面</button></div>`;
+    else if(ios) out+=`<div class="notice">在 Safari 按下方的分享鍵，選「加入主畫面」。裝好之後打開它，才收得到通知。</div>`;
+  }else if(S.notif==='default'){
+    out+=`<div class="notice">今天的時刻到了要通知你嗎？<br><button class="btn" data-act="asknotif">好</button></div>`;
+  }else if(S.notif==='denied'){
+    out+=`<div class="notice">通知被關掉了。時刻還是會在這裡等你，只是不會主動出聲。要打開的話，到手機的系統設定裡改。</div>`;
+  }
+  return out;
+}
+function viewToday(){
+  const today=dkey(new Date()), now=Date.now(), m=S.moment||{};
+  let banner;
+  if(momentDone()) banner=`<div class="moment done">今天的時刻，留下了。</div>`;
+  else if(m.at&&now>=m.at) banner=`<button class="moment now" data-act="cap" data-theme="daily" data-moment="1"><p class="t">現在。</p><div class="s">有兩分鐘。拍下你現在看到的。</div></button>`;
+  else if(m.at) banner=`<div class="moment wait"><p class="t">今天的時刻還沒到。</p><div class="small muted">會在 9:00 到 22:00 之間出現。</div></div>`;
+  else banner=`<div class="moment wait"><p class="t">今天的時刻已經過了。</p><div class="small muted">明天再來。</div></div>`;
+  const list=S.entries.filter(e=>e.date===today).slice().reverse();
+  const items=list.length?list.map(entryRow).join(''):`<div class="empty">今天還沒有紀錄。<br>不一定要等時刻到，想記就記。</div>`;
+  return `${notices()}${banner}
+    <div class="row"><button class="btn" data-act="cap">記一下</button><span class="small muted">兩分鐘內拍好。來不及也可以。</span></div>
+    ${items}`;
+}
+function entryRow(e){
+  return `<div class="paper entry"><button data-act="open" data-id="${e.id}">
+    <div class="th">${e.img?`<img src="${e.img}" alt="">`:''}</div>
+    <div><p class="line">${e.line?esc(e.line):'<span class="muted">（沒有寫字）</span>'}</p>
+    <div class="meta">${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 晚了一點':''}</div></div>
+  </button></div>`;
+}
+function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd+off*7); return d }
+function viewWeek(){
+  const s=weekStart(S.weekOff), today=dkey(new Date());
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return d});
+  const e=new Date(s); e.setDate(s.getDate()+6);
+  const rng=`${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}`;
+  const has=days.some(d=>S.entries.some(x=>x.date===dkey(d)&&x.img));
+  const rows=days.map(d=>{
+    const k=dkey(d), es=S.entries.filter(x=>x.date===k);
+    const th=es.length?es.map(x=>`<button class="th2 ${x.img?'':'txt'} ${k===today?'today':''}" data-act="open" data-id="${x.id}" aria-label="打開">${x.img?`<img src="${x.img}" alt="">`:esc((x.line||themeName(x.theme)).slice(0,12))}</button>`).join(''):`<span class="none">—</span>`;
+    return `<div class="day"><div class="lab">${WD[d.getDay()]}<small>${d.getMonth()+1}/${d.getDate()}</small></div><div class="thumbs">${th}</div></div>`;
+  }).join('');
+  return `<div class="weekhead"><button data-act="wk" data-d="-1" aria-label="上一週">‹</button><span class="rng">${rng}</span><button data-act="wk" data-d="1" aria-label="下一週" ${S.weekOff>=0?'disabled':''}>›</button></div>
+    <div class="sheet">${rows}</div>
+    <div style="margin-top:18px"><button class="btn" data-act="play" ${has?'':'disabled'}>播放這週</button>
+    <span class="small muted" style="margin-left:10px">每張兩秒，像一段短片。</span></div>`;
+}
+function agentReady(){ const days=new Set(S.entries.map(e=>e.date)); return S.entries.length>=6&&days.size>=3 }
+function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
+function viewAgent(){
+  const hasKey=!!(S.settings&&S.settings.apiKey);
+  let status;
+  if(S.busy) status='它在看。';
+  else if(S.err) status=S.err;
+  else if(!hasKey) status='還沒接上。到設定填一組 API 金鑰，它才看得了。';
+  else if(!agentReady()) status='還在累積。它需要幾天的紀錄，才看得出什麼是反覆出現的。';
+  else if(!S.agentMeta.lastCheck) status='還沒看過。';
+  else status=`上次看是${rel(S.agentMeta.lastCheck)}。${S.agentMeta.lastSpoke?'':'那次沒有想說的。'}`;
+  const prints=S.agentLog.slice().reverse().map(m=>`<div class="print"${m.id===S.freshId?' data-fresh':''}>
+    <p class="txt">${esc(m.text)}</p>
+    <div class="when">${new Date(m.ts).getMonth()+1}月${new Date(m.ts).getDate()}日</div>
+    <div class="fb">${m.reaction?`<span class="chosen">你說：${m.reaction==='yes'?'有這回事':'不是這樣'}</span>`:
+      `<button class="btn" data-act="react" data-id="${m.id}" data-r="yes">有這回事</button><button class="btn" data-act="react" data-id="${m.id}" data-r="no">不是這樣</button>`}</div>
+    ${m.reply?`<div class="reply">${esc(m.reply)}</div>`:(m.reaction?`<textarea rows="1" placeholder="想補一句的話（可以不寫）" data-reply="${m.id}"></textarea><div style="margin-top:8px"><button class="link" data-act="reply" data-id="${m.id}">送出</button></div>`:'')}
+  </div>`).join('');
+  return `<p class="lead">它一直在看，只在真的看見什麼的時候才開口。<br>它不會告訴你該怎麼做，也不會猜你的心情。</p>
+    <p class="status">${esc(status)}</p>
+    <div class="row"><button class="btn" data-act="check" ${(S.busy||!agentReady()||!hasKey)?'disabled':''}>讓它看一次</button></div>
+    ${prints}
+    <div style="margin-top:40px"><button class="link" data-act="settings">設定</button></div>`;
+}
+
+/* ---------- 拍下 ---------- */
+let capTimer=null, capSafe=null;
+function openCap(theme,moment,pt){
+  if(capSafe){ capSafe.destroy(); capSafe=null }
+  S.cap={theme:theme||null,moment:!!moment,start:Date.now(),img:null,line:''};
+  const ovc=$('#ovCap');
+  fx.ov.show(ovc,pt?{from:pt}:{});
+  capSafe=fx.safelight.mount(ovc);
+  renderCap();
+  clearInterval(capTimer); capTimer=setInterval(()=>{const el=$('#cd');if(el)el.replaceWith(cdEl())},250);
+}
+function closeCap(){ clearInterval(capTimer); S.cap=null; fx.ov.hide($('#ovCap'),()=>{ if(capSafe){ capSafe.destroy(); capSafe=null } }) }
+function cdEl(){
+  const left=Math.max(0,120000-(Date.now()-S.cap.start));
+  if(capSafe) capSafe.setLeft(left/120000);
+  const d=document.createElement('div'); d.id='cd'; d.className='cd'+(left===0?' late':'');
+  d.textContent=`${Math.floor(left/60000)}:${pad(Math.floor(left/1000)%60)}`;
+  const msg=$('#latemsg'); if(msg) msg.textContent=left===0?'晚了一點。還是可以留下。':'';
+  return d;
+}
+function renderCap(){
+  const c=S.cap;
+  const chips=THEMES().map(t=>`<button class="chip ${c.theme===t.k?'on':''}" data-act="theme" data-k="${t.k}">${esc(t.n)}</button>`).join('');
+  $('#capBody').innerHTML=`
+    <div class="top"><span style="font-family:var(--serif);letter-spacing:.08em">${c.moment?'今天的時刻':'記一下'}</span><button class="link" data-act="capclose">先不要</button></div>
+    <p class="now">現在。</p>
+    <div id="cd" class="cd">2:00</div><div class="latemsg" id="latemsg"></div>
+    <div class="chips">${chips}</div>
+    ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>`:''}
+    <label class="camlab">${c.img?'重拍':'打開相機'}<input type="file" accept="image/*" capture="environment" data-file="1"></label>
+    <input class="line" placeholder="一句話就好。可以不寫。" maxlength="40" value="${esc(c.line)}" data-line="1">
+    <button class="btn paper wide" data-act="capsave" ${c.theme?'':'disabled'}>留下</button>
+    ${c.theme?'':'<div class="small" style="opacity:.85;margin-top:10px">先選一個主題。</div>'}
+  `;
+  cdEl();
+}
+async function compress(file){
+  try{
+    const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
+    const M=560, s=Math.min(1,M/Math.max(bmp.width,bmp.height));
+    const w=Math.round(bmp.width*s), h=Math.round(bmp.height*s);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(bmp,0,0,w,h); bmp.close&&bmp.close();
+    return cv.toDataURL('image/jpeg',.7);
+  }catch{ return null }
+}
+async function saveCap(){
+  const c=S.cap; if(!c||!c.theme) return;
+  const now=new Date();
+  const e={id:String(now.getTime()),ts:now.getTime(),date:dkey(now),theme:c.theme,line:c.line.trim(),img:c.img,late:(Date.now()-c.start)>120000,moment:c.moment};
+  S.entries.push(e); await putEntry(e); closeCap(); S.view='today'; render();
+}
+
+/* ---------- 單則 / 播放 ---------- */
+let entryH=null;
+async function openEntry(id){
+  const e=S.entries.find(x=>x.id===id); if(!e) return;
+  const d=parseD(e.date);
+  if(entryH){ entryH.destroy(); entryH=null }
+  $('#ovEntry').innerHTML=`<div class="in">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--serif);letter-spacing:.08em">${esc(themeName(e.theme))}</span><button class="link" data-act="eclose">關掉</button></div>
+    <div class="big" id="entryBig"></div>
+    <p class="line">${e.line?esc(e.line):'<span style="opacity:.6">（沒有寫字）</span>'}</p>
+    <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 晚了一點':''}</div>
+    <div><button class="link" data-act="edel" data-id="${e.id}">刪掉這一則</button></div>
+  </div>`;
+  fx.ov.show($('#ovEntry'));
+  if(e.img){
+    const h=fx.photo.mount($('#entryBig'),{label:e.line||'照片'}); entryH=h;
+    await h.setImage(e.img,e.line||'照片');
+    if(entryH===h) h.develop(2.4,.12);
+  }
+}
+function closeEntry(){ fx.ov.hide($('#ovEntry'),()=>{ if(entryH){ entryH.destroy(); entryH=null } }) }
+let slideT=null, slideList=[], slideI=0, slideH=null, slideGen=0;
+function playWeek(){
+  const s=weekStart(S.weekOff), e=new Date(s); e.setDate(s.getDate()+7);
+  slideList=S.entries.filter(x=>x.img&&x.ts>=s.getTime()&&x.ts<e.getTime()); if(!slideList.length) return;
+  slideI=0; slideGen++;
+  if(slideH){ slideH.destroy(); slideH=null }
+  const ovs=$('#ovSlide');
+  ovs.innerHTML=`<div class="in"><div class="bar" id="bar"></div><div class="stage" id="stage"></div>
+    <div class="cap"><p class="line" id="slLine"></p><div class="meta" id="slMeta"></div></div></div>`;
+  fx.ov.show(ovs);
+  slideH=fx.photo.mount($('#stage'),{base:[0,0,0],box:()=>({w:innerWidth,h:innerHeight})});
+  showSlide();
+}
+async function showSlide(){
+  const gen=slideGen, x=slideList[slideI], d=parseD(x.date);
+  await slideH.setImage(x.img,x.line||'照片');
+  if(gen!==slideGen||!slideH) return;
+  $('#slLine').textContent=x.line||''; $('#slMeta').textContent=`${fmtDate(d)} ${fmtTime(x.ts)} · ${themeName(x.theme)}`;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const bar=$('#bar'); if(bar&&!reduce){ bar.style.transition='none'; bar.style.width='0'; requestAnimationFrame(()=>{bar.style.transition='width 2s linear'; bar.style.width='100%'}) }
+  slideH.develop(.9);
+  clearTimeout(slideT); slideT=setTimeout(()=>{ slideI++; if(slideI>=slideList.length) closeSlide(); else showSlide() },2000);
+}
+function closeSlide(){ clearTimeout(slideT); slideGen++; fx.ov.hide($('#ovSlide'),()=>{ if(slideH){ slideH.destroy(); slideH=null } }) }
+
+/* ---------- 設定 ---------- */
+function openSettings(){
+  const st=S.settings||{};
+  $('#ovSet').innerHTML=`<div class="in">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><h2>設定</h2><button class="link" data-act="setclose">關掉</button></div>
+    <div class="grp"><h3>習慣主題</h3>
+      <input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"></div>
+    <div class="grp"><h3>顯影用的金鑰</h3>
+      <p>觀察者需要一組 Anthropic API 金鑰才能運作。金鑰只存在這支手機裡，不會傳給別人。這是給自己測試用的做法，正式上線要改由伺服器保管。</p>
+      <input type="password" id="setKey" placeholder="sk-ant-..." value="${esc(st.apiKey||'')}"></div>
+    <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button></div>
+    <div class="grp"><h3>資料</h3>
+      <p>所有紀錄和照片都在這支手機裡，沒有上傳。移除 App 或清掉瀏覽器資料就會一起消失。</p>
+      <button class="link" data-act="export">匯出成一個檔案</button><br><br>
+      <button class="link" data-act="reset">清掉所有紀錄</button></div>
+  </div>`;
+  fx.ov.show($('#ovSet'));
+}
+
+/* ---------- 顯影：觀察者 ---------- */
+function systemPrompt(){
+  const habit=(S.settings&&S.settings.habit)||'習慣';
+  return `你是「顯影」裡的觀察者。使用者用這個 app 隨機記錄真實生活的片段（照片＋一句話），分成四個主題：日常、身邊的人、所在之處、習慣（${habit}）。你只做一件事：長期看這些紀錄，只在真的看見一個「跨越時間的模式」時才開口。
+
+你會收到：所有紀錄的日期、星期、時段、主題、一句話（JSON），最近幾張照片（依時間排序，最後一張最新），以及你過去說過的話和使用者的回應。
+
+怎麼決定：
+1. 沒有跨時間的模式，或紀錄還太少、太短（少於一週或不到八則），就不要開口：speak=false。沉默是正常的，也是好的。多數時候你應該沉默。
+2. 一則紀錄的內容不是模式。模式是「反覆出現」或「明顯改變」：同一個地方、同一個時段、同一種東西、某一天之後變得不一樣。
+3. 有把握的行為模式，用「說」（mode=say）：具體指出你看到什麼，然後停下。不解釋意義，不給建議。
+4. 涉及詮釋、你沒把握的，用「問」（mode=ask）：講出你注意到的，用一個問題把詮釋權交回給對方。
+5. 使用者回過「不是這樣」的觀察，不要再用同一個角度。回過「有這回事」的，可以延續，但不要重複講同一件事。
+6. 一次只說一件事，兩句以內。台灣的中文口語，像一個安靜、認識很久的朋友：不熱情、不鼓勵、不下結論。
+
+絕對不做：
+- 不評估或猜測心情、狀態、心理健康。不說「你好像很累／低落／迷茫／快樂」。
+- 不給方向、建議、鼓勵、稱讚。不說「加油」「很棒」「繼續保持」「可以試試」。
+- 不算成就。不講連續幾天、達成幾次。次數只用來描述模式（「這兩週有一半的晚上」），不當成績。
+- 不跟任何人比較。
+- 不用「數據」「分析」「偵測」「紀錄顯示」這類字。
+
+只輸出 JSON，沒有其他文字、沒有 markdown 圍欄：
+{"speak": true 或 false, "mode": "say" 或 "ask", "text": "要說的話；speak=false 時為空字串", "why": "一句話給你自己的備註"}`;
+}
+async function runAgent(){
+  const key=S.settings&&S.settings.apiKey;
+  if(S.busy||!agentReady()||!key) return;
+  S.busy=true; S.err=''; render();
+  try{
+    const log=S.entries.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',late:!!e.late,moment:!!e.moment}));
+    const imgs=S.entries.filter(e=>e.img).slice(-10).map(e=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:e.img.split(',')[1]}}));
+    const past=S.agentLog.map(m=>({when:new Date(m.ts).toISOString().slice(0,10),mode:m.mode,said:m.text,reaction:m.reaction||null,reply:m.reply||''}));
+    const payload={today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past};
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt(),messages:[{role:'user',content:[...imgs,{type:'text',text:JSON.stringify(payload)}]}]})});
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message||'api');
+    const text=(data.content||[]).map(b=>b.type==='text'?b.text:'').join('').replace(/```json|```/g,'').trim();
+    const out=JSON.parse(text);
+    S.agentMeta={lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:!!(out.speak&&out.text)};
+    if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:''}); await kvSet('agentLog',S.agentLog) }
+    await kvSet('agentMeta',S.agentMeta);
+  }catch(e){ console.error(e); S.err='它這次沒看清楚（連線或金鑰出了問題）。等一下再讓它看一次。' }
+  S.busy=false; render();
+}
+function maybeAutoRun(){
+  if(!agentReady()||S.busy||!(S.settings&&S.settings.apiKey)) return;
+  const m=S.agentMeta, fresh=m.lastCheck&&(Date.now()-m.lastCheck)<20*36e5;
+  if(!fresh&&S.entries.length>(m.lastCount||0)) runAgent();
+}
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click',async ev=>{
+  const a=ev.target.closest('[data-act]'); if(!a) return;
+  const d=a.dataset;
+  switch(d.act){
+    case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date()),apiKey:''}; await kvSet('settings',S.settings); render({enter:true}); break }
+    case 'nav': if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='agent') maybeAutoRun(); break;
+    case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
+    case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
+    case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
+    case 'theme': S.cap.theme=d.k; S.cap.line=$('[data-line]').value; renderCap(); break;
+    case 'capclose': closeCap(); break;
+    case 'capsave': S.cap.line=$('[data-line]').value; await saveCap(); break;
+    case 'open': openEntry(d.id); break;
+    case 'eclose': closeEntry(); break;
+    case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeEntry(); render(); break }
+    case 'wk': S.weekOff=Math.min(0,S.weekOff+Number(d.d)); render(); break;
+    case 'play': playWeek(); break;
+    case 'check': runAgent(); break;
+    case 'react':{ const m=S.agentLog.find(x=>x.id===d.id); if(m){ m.reaction=d.r; await kvSet('agentLog',S.agentLog); render() } break }
+    case 'reply':{ const m=S.agentLog.find(x=>x.id===d.id); const ta=document.querySelector(`[data-reply="${d.id}"]`); if(m&&ta&&ta.value.trim()){ m.reply=ta.value.trim().slice(0,200); await kvSet('agentLog',S.agentLog) } render(); break }
+    case 'settings': openSettings(); break;
+    case 'setclose': fx.ov.hide($('#ovSet')); break;
+    case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣',apiKey:$('#setKey').value.trim()});
+      await kvSet('settings',S.settings); fx.ov.hide($('#ovSet')); render(); break }
+    case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
+      const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='顯影-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
+    case 'reset':{ if(!confirm('清掉所有紀錄與它說過的話？這無法復原。')) break;
+      await clearEntries(); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
+      for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
+      S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today';
+      fx.ov.hide($('#ovSet')); await ensureMoment(); render(); break }
+  }
+});
+document.addEventListener('change',async ev=>{
+  if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=$('[data-line]').value; S.cap.img=await compress(f); renderCap() }
+});
+document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
+$('#ovSlide').addEventListener('click',closeSlide);
+document.addEventListener('keydown',ev=>{ if(ev.key==='Escape'){ closeSlide(); closeEntry(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap() } });
+
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); S.installEvt=e; if(S.settings&&S.view==='today') render() });
+document.addEventListener('visibilitychange',async()=>{ if(!document.hidden){ S.dayKey=dkey(new Date()); await ensureMoment(); if(!S.cap) render() } });
+/* 每 20 秒檢查一次；只有「時刻狀態」或日期真的變了才重繪，不再整頁無謂重畫 */
+setInterval(async()=>{
+  await tickMoment();
+  $('#hdate').textContent=fmtDate(new Date());
+  if(dkey(new Date())!==S.dayKey){ S.dayKey=dkey(new Date()); await ensureMoment(); if(!S.cap) render(); return }
+  if(S.view==='today'&&S.settings&&!S.cap&&bannerSig()!==lastBanner) render();
+},20000);
+
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.error('sw',e))) }
+load().then(()=>{ render({enter:true}); tickMoment() });
+</script>
+</body>
+</html>
