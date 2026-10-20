@@ -95,7 +95,7 @@
   .strip{flex:none;width:var(--sw,190px);scroll-snap-align:center;scroll-snap-stop:always;background:var(--paper);padding:10px 10px 0;
     box-shadow:0 1px 0 rgba(0,0,0,.22),0 6px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
   .strip.future{opacity:.42}
-  .frame{width:var(--fw,170px);height:var(--fh,140px);background:#2A2826;border:0;padding:0;overflow:hidden;position:relative;display:block}
+  .frame{touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:var(--fw,170px);height:var(--fh,140px);background:#2A2826;border:0;padding:0;overflow:hidden;position:relative;display:block}
   .frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.92) contrast(1.02)}
   .frame.empty{background:var(--paper-2);cursor:default}
   .frame.empty span{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--ink-3);letter-spacing:.04em}
@@ -456,6 +456,21 @@ function syncWeekHead(){
 function mountBooth(){
   const b=$('#booth'); if(!b) return;
   layoutBooth(); placeBooth();
+  /* iPhone：在會吸附捲動的容器裡，點一下常常不會產生 click（尤其剛滑完）。
+     直接用觸控判斷「點一下」：手指移動小於 10px、0.7 秒內放開，就當作點擊並打開滿版，
+     同時取消後續的 click，避免重複觸發。 */
+  let tp=null;
+  b.addEventListener('touchstart',ev=>{
+    const f=ev.target.closest&&ev.target.closest('.frame[data-act="full"]'), t=ev.touches[0];
+    tp=(f&&ev.touches.length===1)?{f,x:t.clientX,y:t.clientY,t:Date.now()}:null;
+  },{passive:true});
+  b.addEventListener('touchmove',ev=>{ if(!tp) return; const t=ev.touches[0]; if(Math.hypot(t.clientX-tp.x,t.clientY-tp.y)>10) tp=null },{passive:true});
+  b.addEventListener('touchcancel',()=>{ tp=null },{passive:true});
+  b.addEventListener('touchend',ev=>{
+    const p=tp; tp=null; if(!p||Date.now()-p.t>700) return;
+    if(ev.cancelable) ev.preventDefault();
+    openFull(p.f.dataset.id,p.f);
+  },{passive:false});
   let vt=null;
   // 上下：換週。停下來之後才換內容，滑的過程不重排
   b.addEventListener('scroll',ev=>{
@@ -634,9 +649,11 @@ function openFull(id,src){
   G.killTweensOf(el); G.set(el,{opacity:1});           // 不要整層淡入，改成照片自己放大
   const r=fullSrc&&fullSrc.getBoundingClientRect(); if(!r||!r.width) return;
   const ph=el.querySelector('.ph');
+  try{
   G.fromTo(ph,{left:r.left,top:r.top,width:r.width,height:r.height},{left:0,top:0,width:innerWidth,height:innerHeight,duration:.55,ease:'power3.inOut',clearProps:'left,top,width,height'});
   G.fromTo(el.querySelector('.bd'),{opacity:0},{opacity:1,duration:.4,ease:'power1.out'});
   G.fromTo(el.querySelectorAll('.fbar,.info'),{opacity:0},{opacity:1,duration:.3,delay:.4});
+  }catch(err){ console.error(err); G.set([ph,el.querySelector('.bd'),...el.querySelectorAll('.fbar,.info')],{clearProps:'all'}) }
 }
 function closeFull(instant){
   const el=$('#ovFull'); if(!el.classList.contains('show')||el._hiding) return;
@@ -942,7 +959,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v5';
+const APP_VER='v6';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
