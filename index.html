@@ -75,19 +75,39 @@
   .entry button{all:unset;cursor:pointer;display:flex;gap:12px;align-items:flex-start;width:100%}
   .empty{font-family:var(--serif);color:var(--ink-2);font-size:16px;line-height:1.8;padding:10px 0}
 
-  .weekhead{display:flex;align-items:center;justify-content:space-between;margin:6px 0 14px}
-  .weekhead .rng{font-family:var(--serif);font-size:18px}
-  .weekhead button{background:none;border:1px solid var(--line);width:34px;height:34px;border-radius:50%;font-size:16px;color:var(--ink-2)}
-  .sheet{border-top:1px solid var(--line)}
-  .day{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
-  .day .lab{width:34px;flex:none;font-family:var(--serif);font-size:15px;line-height:1.2;padding-top:6px}
-  .day .lab small{display:block;font-family:var(--sans);font-size:11px;color:var(--ink-3);margin-top:2px}
-  .day .thumbs{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-height:40px;align-items:center}
-  .day .none{color:var(--ink-3);font-size:13px;padding-left:4px}
-  .th2{width:62px;height:62px;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08);background:var(--paper-2);padding:0;overflow:hidden}
-  .th2 img{width:100%;height:100%;object-fit:cover}
-  .th2.txt{font-family:var(--serif);font-size:11px;line-height:1.3;color:var(--ink-2);padding:5px;text-align:left;display:flex;align-items:flex-end;background:var(--paper)}
-  .th2.today{outline:2px solid var(--ink);outline-offset:1px}
+  /* 這週：拍貼機。一天一條四格，左右換天、上下換週 */
+  main.v-week{padding-bottom:0}
+  .weekhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:2px 0 10px}
+  .weekhead .rng{font-family:var(--serif);font-size:19px;letter-spacing:.02em}
+  .weekhead .hint{font-size:12px;color:var(--ink-2);margin-top:3px}
+  .weekhead .btn{padding:9px 13px;font-size:14px;flex:none}
+  .wdays{display:flex;justify-content:space-between;margin:0 0 4px}
+  .wdays button{flex:1;background:none;border:0;padding:6px 0 8px;font-family:var(--serif);font-size:14px;color:var(--ink-2);position:relative}
+  .wdays button.on{color:var(--ink);font-weight:600}
+  .wdays button.on::after{content:"";position:absolute;left:50%;bottom:2px;width:14px;height:2px;margin-left:-7px;background:var(--ink)}
+  .wdays button.td{color:var(--safe)}
+  .booth{margin:0 -22px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .booth::-webkit-scrollbar,.wtrack::-webkit-scrollbar{display:none}
+  .wrow{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative}
+  .wrow .wk{position:absolute;left:22px;top:6px;font-size:11px;letter-spacing:.06em;color:var(--ink-3)}
+  .wtrack{height:100%;display:flex;align-items:center;gap:var(--gap,16px);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+    overscroll-behavior-x:contain;scrollbar-width:none;padding:0 calc(50% - var(--sw,190px) / 2)}
+  .strip{flex:none;width:var(--sw,190px);scroll-snap-align:center;scroll-snap-stop:always;background:var(--paper);padding:10px 10px 0;
+    box-shadow:0 1px 0 rgba(0,0,0,.22),0 6px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
+  .strip.future{opacity:.42}
+  .frame{width:var(--fw,170px);height:var(--fh,140px);background:#2A2826;border:0;padding:0;overflow:hidden;position:relative;display:block}
+  .frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.92) contrast(1.02)}
+  .frame.empty{background:var(--paper-2);cursor:default}
+  .frame.empty span{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+  .frame.txt{background:#2A2826;color:var(--paper);font-family:var(--serif);font-size:13px;line-height:1.5;text-align:left;padding:10px;display:flex;align-items:flex-end}
+  .frame .n{position:absolute;right:6px;top:6px;background:rgba(236,232,223,.92);color:var(--ink);font-size:11px;padding:1px 6px;border-radius:999px}
+  .strip .foot{height:34px;display:flex;align-items:center;justify-content:space-between;font-family:var(--serif);font-size:12px;color:var(--ink-2)}
+  .strip .foot b{font-weight:600;letter-spacing:.18em;color:var(--ink)}
+  .strip.today .foot .d{color:var(--safe);font-weight:600}
+  .sibs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-12px 0 24px;font-size:13px;opacity:.85}
+  .sibs button{width:44px;height:44px;padding:0;border:2px solid transparent;background:#000;overflow:hidden}
+  .sibs button.on{border-color:var(--paper)}
+  .sibs img{width:100%;height:100%;object-fit:cover}
 
   .print{background:var(--paper);padding:18px 18px 14px;border-radius:2px;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.05);margin-bottom:14px}
   .print .txt{font-family:var(--serif);font-size:18px;line-height:1.85;margin:0 0 10px}
@@ -185,7 +205,7 @@ const fmtTime=ts=>{const d=new Date(ts);return `${pad(d.getHours())}:${pad(d.get
 const parseD=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 
 const S={view:'today',entries:[],agentLog:[],agentMeta:{},settings:null,moment:null,cap:null,
-         weekOff:0,busy:false,err:'',freshId:null,dayKey:dkey(new Date()),installEvt:null,notif:(window.Notification?Notification.permission:'unsupported')};
+         weekOff:0,dayIdx:null,busy:false,err:'',freshId:null,dayKey:dkey(new Date()),installEvt:null,notif:(window.Notification?Notification.permission:'unsupported')};
 const THEMES=()=>[{k:'daily',n:'日常'},{k:'people',n:'身邊的人'},{k:'place',n:'所在之處'},{k:'habit',n:(S.settings&&S.settings.habit)||'習慣'}];
 const themeName=k=>(THEMES().find(t=>t.k===k)||{}).n||k;
 
@@ -273,7 +293,9 @@ function render(o){
   $('#tabs').style.display='';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
   if(!o.nav&&dotView!==S.view&&fx.navDot(S.view,true)) dotView=S.view;
+  $('#view').className='v-'+S.view;
   $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewAgent();
+  if(S.view==='week') mountBooth();
   if(o.enter) fx.enter($('#view'));
   fx.pulse(S.busy&&S.view==='agent'?$('#view .status'):null);
   if(S.view==='agent'){ const f=$('#view [data-fresh] .txt'); if(f){ S.freshId=null; fx.develop(f) } }
@@ -325,21 +347,111 @@ function entryRow(e){
   </button></div>`;
 }
 function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd+off*7); return d }
-function viewWeek(){
-  const s=weekStart(S.weekOff), today=dkey(new Date());
-  const days=[...Array(7)].map((_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return d});
-  const e=new Date(s); e.setDate(s.getDate()+6);
-  const rng=`${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}`;
-  const has=days.some(d=>S.entries.some(x=>x.date===dkey(d)&&x.img));
-  const rows=days.map(d=>{
-    const k=dkey(d), es=S.entries.filter(x=>x.date===k);
-    const th=es.length?es.map(x=>`<button class="th2 ${x.img?'':'txt'} ${k===today?'today':''}" data-act="open" data-id="${x.id}" aria-label="打開">${x.img?`<img src="${x.img}" alt="">`:esc((x.line||themeName(x.theme)).slice(0,12))}</button>`).join(''):`<span class="none">—</span>`;
-    return `<div class="day"><div class="lab">${WD[d.getDay()]}<small>${d.getMonth()+1}/${d.getDate()}</small></div><div class="thumbs">${th}</div></div>`;
+const DAYC=['一','二','三','四','五','六','日'];
+const todayIdx=()=>(new Date().getDay()+6)%7;
+/* 最早要顯示到哪一週：開始使用那天或最早一則紀錄，最多往回兩年 */
+function minWeekOff(){
+  const cur=weekStart(0).getTime();
+  let first=S.settings&&S.settings.since?parseD(S.settings.since).getTime():Date.now();
+  if(S.entries.length) first=Math.min(first,S.entries[0].ts);
+  const d=new Date(first); d.setHours(0,0,0,0); d.setDate(d.getDate()-(d.getDay()+6)%7);
+  return Math.max(-104,Math.min(0,Math.round((d.getTime()-cur)/(7*864e5))));
+}
+function weekRange(off){ const s=weekStart(off), e=new Date(s); e.setDate(s.getDate()+6); return `${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}` }
+function weekHasImg(off){ const s=weekStart(off).getTime(), e=s+7*864e5; return S.entries.some(x=>x.img&&x.ts>=s&&x.ts<e) }
+/* 一格：同一天同一主題有多張時，放那天的時刻那張，沒有就放最後一張 */
+function frameHTML(k,t,full){
+  const es=S.entries.filter(x=>x.date===k&&x.theme===t.k);
+  if(!es.length) return `<div class="frame empty" aria-label="${esc(t.n)}：沒有"><span>${esc(t.n)}</span></div>`;
+  const x=es.find(y=>y.moment)||es[es.length-1], n=es.length>1?`<i class="n">${es.length}</i>`:'';
+  if(!x.img) return `<button class="frame txt" data-act="open" data-id="${x.id}" aria-label="${esc(t.n)}">${esc((x.line||t.n).slice(0,24))}${n}</button>`;
+  return `<button class="frame" data-act="open" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}">${full?`<img src="${x.img}" alt="" decoding="async">`:''}${n}</button>`;
+}
+function stripsHTML(off,full){
+  const s=weekStart(off), today=dkey(new Date()), now=Date.now();
+  return DAYC.map((c,i)=>{
+    const d=new Date(s); d.setDate(s.getDate()+i); const k=dkey(d), fut=d.getTime()>now&&k!==today;
+    const frames=THEMES().map(t=>fut?`<div class="frame empty"><span>${esc(t.n)}</span></div>`:frameHTML(k,t,full)).join('');
+    return `<div class="strip ${k===today?'today':''} ${fut?'future':''}" data-i="${i}" aria-label="${d.getMonth()+1}月${d.getDate()}日 週${c}">
+      ${frames}<div class="foot"><b>顯影</b><span class="d">${k===today?'今天':fut?'還沒到':`${d.getMonth()+1}.${pad(d.getDate())} ${c}`}</span></div></div>`;
   }).join('');
-  return `<div class="weekhead"><button data-act="wk" data-d="-1" aria-label="上一週">‹</button><span class="rng">${rng}</span><button data-act="wk" data-d="1" aria-label="下一週" ${S.weekOff>=0?'disabled':''}>›</button></div>
-    <div class="sheet">${rows}</div>
-    <div style="margin-top:18px"><button class="btn" data-act="play" ${has?'':'disabled'}>播放這週</button>
-    <span class="small muted" style="margin-left:10px">每張兩秒，像一段短片。</span></div>`;
+}
+function viewWeek(){
+  const min=minWeekOff();
+  S.weekOff=Math.max(min,Math.min(0,S.weekOff));
+  if(S.dayIdx==null) S.dayIdx=todayIdx();
+  let rows='';
+  for(let off=min;off<=0;off++){
+    const full=Math.abs(off-S.weekOff)<=1;
+    rows+=`<section class="wrow" data-off="${off}"><span class="wk">${off===0?'這週':weekRange(off)}</span><div class="wtrack" data-off="${off}" data-full="${full?1:0}">${stripsHTML(off,full)}</div></section>`;
+  }
+  return `<div class="weekhead"><div><div class="rng" id="wkRng">${weekRange(S.weekOff)}</div><div class="hint">左右換天・上下換週</div></div>
+      <button class="btn" data-act="play" id="wkPlay" ${weekHasImg(S.weekOff)?'':'disabled'}>播放這週</button></div>
+    <div class="wdays" id="wdays">${DAYC.map((c,i)=>`<button data-act="wday" data-i="${i}" class="${i===S.dayIdx?'on':''} ${S.weekOff===0&&i===todayIdx()?'td':''}" aria-label="週${c}">${c}</button>`).join('')}</div>
+    <div class="booth" id="booth" data-lenis-prevent tabindex="-1">${rows}</div>`;
+}
+/* 版面：拍貼機要剛好塞滿「標題下方到分頁列上方」，頁面本身不捲 */
+let boothH=0, boothStep=206;
+const smooth=()=>matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
+function layoutBooth(){
+  const b=$('#booth'); if(!b) return;
+  const top=b.getBoundingClientRect().top+scrollY, tabs=$('#tabs').offsetHeight||70;
+  const H=Math.max(380,Math.round(innerHeight-top-tabs));
+  const W=b.clientWidth||innerWidth;
+  // 一條：上 padding 10 + 四格 + 三個間距 6 + 底下 34；上下各留 30 給週標與呼吸
+  let fh=Math.floor((H-60-10-18-34)/4), fw=Math.round(fh*1.22);
+  const maxW=Math.min(230,W*0.58); if(fw>maxW){ fw=Math.round(maxW); fh=Math.round(fw/1.22) }
+  const sw=fw+20, gap=Math.max(14,Math.round(W*0.045));
+  boothH=H; boothStep=sw+gap;
+  b.style.height=H+'px';
+  b.style.setProperty('--fh',fh+'px'); b.style.setProperty('--fw',fw+'px');
+  b.style.setProperty('--sw',sw+'px'); b.style.setProperty('--gap',gap+'px');
+}
+function placeBooth(){
+  const b=$('#booth'); if(!b) return;
+  const min=minWeekOff();
+  b.scrollTop=(S.weekOff-min)*boothH;
+  b.querySelectorAll('.wtrack').forEach(t=>{ t.scrollLeft=S.dayIdx*boothStep });
+}
+function hydrateWeeks(){
+  const b=$('#booth'); if(!b) return;
+  b.querySelectorAll('.wtrack').forEach(t=>{
+    const off=Number(t.dataset.off), want=Math.abs(off-S.weekOff)<=1?'1':'0';
+    if(t.dataset.full!==want){ const L=t.scrollLeft; t.innerHTML=stripsHTML(off,want==='1'); t.dataset.full=want; t.scrollLeft=L }
+  });
+}
+function syncWeekHead(){
+  const r=$('#wkRng'); if(r) r.textContent=weekRange(S.weekOff);
+  const p=$('#wkPlay'); if(p) p.disabled=!weekHasImg(S.weekOff);
+  document.querySelectorAll('#wdays button').forEach((x,i)=>{ x.classList.toggle('on',i===S.dayIdx); x.classList.toggle('td',S.weekOff===0&&i===todayIdx()) });
+}
+function mountBooth(){
+  const b=$('#booth'); if(!b) return;
+  layoutBooth(); placeBooth();
+  let vt=null;
+  // 上下：換週。停下來之後才換內容，滑的過程不重排
+  b.addEventListener('scroll',ev=>{
+    if(ev.target===b){
+      const off=minWeekOff()+Math.round(b.scrollTop/boothH);
+      if(off!==S.weekOff){
+        S.weekOff=off; syncWeekHead();
+        const row=b.querySelector(`.wtrack[data-off="${off}"]`); if(row) row.scrollLeft=S.dayIdx*boothStep;
+      }
+      clearTimeout(vt); vt=setTimeout(hydrateWeeks,140);
+    }else if(ev.target.classList&&ev.target.classList.contains('wtrack')&&Number(ev.target.dataset.off)===S.weekOff){
+      // 左右：換天
+      const i=Math.max(0,Math.min(6,Math.round(ev.target.scrollLeft/boothStep)));
+      if(i!==S.dayIdx){ S.dayIdx=i; syncWeekHead() }
+    }
+  },{capture:true,passive:true});
+}
+function goDay(i){
+  i=Math.max(0,Math.min(6,i)); const t=document.querySelector(`#booth .wtrack[data-off="${S.weekOff}"]`);
+  if(t) t.scrollTo({left:i*boothStep,behavior:smooth()});
+}
+function goWeek(dir){
+  const b=$('#booth'); if(!b) return; const min=minWeekOff();
+  const off=Math.max(min,Math.min(0,S.weekOff+dir)); b.scrollTo({top:(off-min)*boothH,behavior:smooth()});
 }
 function agentReady(){ const days=new Set(S.entries.map(e=>e.date)); return S.entries.length>=6&&days.size>=3 }
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
@@ -421,18 +533,21 @@ async function saveCap(){
 
 /* ---------- 單則 / 播放 ---------- */
 let entryH=null;
-async function openEntry(id){
+async function openEntry(id,pt){
   const e=S.entries.find(x=>x.id===id); if(!e) return;
   const d=parseD(e.date);
+  const sibs=S.entries.filter(x=>x.date===e.date&&x.theme===e.theme);
   if(entryH){ entryH.destroy(); entryH=null }
   $('#ovEntry').innerHTML=`<div class="in">
     <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--serif);letter-spacing:.08em">${esc(themeName(e.theme))}</span><button class="link" data-act="eclose">關掉</button></div>
     <div class="big" id="entryBig"></div>
     <p class="line">${e.line?esc(e.line):'<span style="opacity:.6">（沒有寫字）</span>'}</p>
     <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 晚了一點':''}</div>
+    ${sibs.length>1?`<div class="sibs"><span>這一格有 ${sibs.length} 張</span>${sibs.map(x=>`<button class="${x.id===e.id?'on':''}" data-act="open" data-id="${x.id}" aria-label="${fmtTime(x.ts)}">${x.img?`<img src="${x.img}" alt="">`:''}</button>`).join('')}</div>`:''}
     <div><button class="link" data-act="edel" data-id="${e.id}">刪掉這一則</button></div>
   </div>`;
-  fx.ov.show($('#ovEntry'));
+  const ove=$('#ovEntry');
+  if(!ove.classList.contains('show')||ove._hiding) fx.ov.show(ove,pt?{from:pt}:{});
   if(e.img){
     const h=fx.photo.mount($('#entryBig'),{label:e.line||'照片'}); entryH=h;
     await h.setImage(e.img,e.line||'照片');
@@ -550,10 +665,10 @@ document.addEventListener('click',async ev=>{
     case 'theme': S.cap.theme=d.k; S.cap.line=$('[data-line]').value; renderCap(); break;
     case 'capclose': closeCap(); break;
     case 'capsave': S.cap.line=$('[data-line]').value; await saveCap(); break;
-    case 'open': openEntry(d.id); break;
+    case 'open':{ const r=a.getBoundingClientRect(); openEntry(d.id,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
+    case 'wday': goDay(Number(d.i)); break;
     case 'eclose': closeEntry(); break;
     case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeEntry(); render(); break }
-    case 'wk': S.weekOff=Math.min(0,S.weekOff+Number(d.d)); render(); break;
     case 'play': playWeek(); break;
     case 'check': runAgent(); break;
     case 'react':{ const m=S.agentLog.find(x=>x.id===d.id); if(m){ m.reaction=d.r; await kvSet('agentLog',S.agentLog); render() } break }
@@ -576,7 +691,15 @@ document.addEventListener('change',async ev=>{
 });
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
 $('#ovSlide').addEventListener('click',closeSlide);
-document.addEventListener('keydown',ev=>{ if(ev.key==='Escape'){ closeSlide(); closeEntry(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap() } });
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='Escape'){ closeSlide(); closeEntry(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap(); return }
+  // 這週：方向鍵也能翻（桌面用）
+  if(S.view!=='week'||document.querySelector('.ov.show')||/INPUT|TEXTAREA/.test((ev.target||{}).tagName||'')) return;
+  const k={ArrowLeft:()=>goDay(S.dayIdx-1),ArrowRight:()=>goDay(S.dayIdx+1),ArrowUp:()=>goWeek(-1),ArrowDown:()=>goWeek(1)}[ev.key];
+  if(k){ ev.preventDefault(); k() }
+});
+let rsT=null;
+window.addEventListener('resize',()=>{ clearTimeout(rsT); rsT=setTimeout(()=>{ if(S.view==='week'&&$('#booth')){ layoutBooth(); placeBooth() } },120) });
 
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); S.installEvt=e; if(S.settings&&S.view==='today') render() });
 document.addEventListener('visibilitychange',async()=>{ if(!document.hidden){ S.dayKey=dkey(new Date()); await ensureMoment(); if(!S.cap) render() } });
