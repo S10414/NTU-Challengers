@@ -104,6 +104,32 @@
   .strip .foot{height:34px;display:flex;align-items:center;justify-content:space-between;font-family:var(--serif);font-size:12px;color:var(--ink-2)}
   .strip .foot b{font-weight:600;letter-spacing:.18em;color:var(--ink)}
   .strip.today .foot .d{color:var(--safe);font-weight:600}
+  /* 滿版：從格子放大 */
+  .ov.full{background:transparent;overflow:hidden}
+  .ov.full .bd{position:absolute;inset:0;background:#000}
+  .ov.full .ph{position:fixed;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-out}
+  .ov.full .ph.txt{display:flex;align-items:center;justify-content:center;padding:40px 32px;font-family:var(--serif);font-size:24px;line-height:1.8;color:var(--paper);background:#2A2826;overflow:hidden}
+  .ov.full .fbar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:baseline;padding:max(20px,env(safe-area-inset-top)) 22px 40px;background:linear-gradient(rgba(0,0,0,.55),transparent);color:var(--paper);pointer-events:none}
+  .ov.full .fbar>*{pointer-events:auto}
+  .ov.full .fbar .t{font-family:var(--serif);letter-spacing:.08em;font-size:16px}
+  .ov.full .link{color:var(--paper);opacity:.9}
+  .ov.full .info{position:absolute;left:0;right:0;bottom:0;padding:56px 22px max(24px,env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.7));color:var(--paper)}
+  .ov.full .info .line{font-family:var(--serif);font-size:20px;line-height:1.6;margin:0 0 6px}
+  .ov.full .info .meta{font-size:13px;opacity:.8;margin-bottom:14px}
+  .ov.full .sibs{margin:0 0 14px}
+  /* 存下來 */
+  .ov.save{background:var(--ink);color:var(--paper)}
+  .ov.save .link{color:var(--paper);opacity:.85}
+  .ov.save h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0}
+  .seg{display:flex;gap:8px;margin:18px 0 16px}
+  .seg button{flex:1;background:transparent;border:1px solid rgba(236,232,223,.45);color:var(--paper);border-radius:999px;padding:9px 4px;font-size:14px}
+  .seg button.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .expv{display:flex;justify-content:center;margin:0 0 16px}
+  .expv .pv{height:min(58vh,560px);aspect-ratio:9/16;background:#2A2826;display:flex;align-items:center;justify-content:center;color:rgba(236,232,223,.6);font-family:var(--serif);font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+  .expv img{height:100%;width:100%;object-fit:contain;display:block}
+  .ov.save .btn.paper{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+  .ov.save .note{font-size:12px;opacity:.65;margin-top:10px;text-align:center;line-height:1.6}
+  .weekhead .acts{display:flex;gap:8px;flex:none}
   .sibs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-12px 0 24px;font-size:13px;opacity:.85}
   .sibs button{width:44px;height:44px;padding:0;border:2px solid transparent;background:#000;overflow:hidden}
   .sibs button.on{border-color:var(--paper)}
@@ -189,6 +215,8 @@
 <div class="ov dark" id="ovEntry" data-lenis-prevent></div>
 <div class="ov slide" id="ovSlide" data-lenis-prevent></div>
 <div class="ov sheet2" id="ovSet" data-lenis-prevent></div>
+<div class="ov full" id="ovFull" data-lenis-prevent></div>
+<div class="ov save" id="ovSave" data-lenis-prevent></div>
 
 <script src="./vendor/gsap.min.js"></script>
 <script src="./vendor/lenis.min.js"></script>
@@ -364,8 +392,8 @@ function frameHTML(k,t,full){
   const es=S.entries.filter(x=>x.date===k&&x.theme===t.k);
   if(!es.length) return `<div class="frame empty" aria-label="${esc(t.n)}：沒有"><span>${esc(t.n)}</span></div>`;
   const x=es.find(y=>y.moment)||es[es.length-1], n=es.length>1?`<i class="n">${es.length}</i>`:'';
-  if(!x.img) return `<button class="frame txt" data-act="open" data-id="${x.id}" aria-label="${esc(t.n)}">${esc((x.line||t.n).slice(0,24))}${n}</button>`;
-  return `<button class="frame" data-act="open" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}">${full?`<img src="${x.img}" alt="" decoding="async">`:''}${n}</button>`;
+  if(!x.img) return `<button class="frame txt" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}">${esc((x.line||t.n).slice(0,24))}${n}</button>`;
+  return `<button class="frame" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}，放大">${full?`<img src="${x.img}" alt="" decoding="async">`:''}${n}</button>`;
 }
 function stripsHTML(off,full){
   const s=weekStart(off), today=dkey(new Date()), now=Date.now();
@@ -386,7 +414,7 @@ function viewWeek(){
     rows+=`<section class="wrow" data-off="${off}"><span class="wk">${off===0?'這週':weekRange(off)}</span><div class="wtrack" data-off="${off}" data-full="${full?1:0}">${stripsHTML(off,full)}</div></section>`;
   }
   return `<div class="weekhead"><div><div class="rng" id="wkRng">${weekRange(S.weekOff)}</div><div class="hint">左右換天・上下換週</div></div>
-      <button class="btn" data-act="play" id="wkPlay" ${weekHasImg(S.weekOff)?'':'disabled'}>播放這週</button></div>
+      <div class="acts"><button class="btn" data-act="play" id="wkPlay" ${weekHasImg(S.weekOff)?'':'disabled'}>播放</button><button class="btn fill" data-act="save">存下來</button></div></div>
     <div class="wdays" id="wdays">${DAYC.map((c,i)=>`<button data-act="wday" data-i="${i}" class="${i===S.dayIdx?'on':''} ${S.weekOff===0&&i===todayIdx()?'td':''}" aria-label="週${c}">${c}</button>`).join('')}</div>
     <div class="booth" id="booth" data-lenis-prevent tabindex="-1">${rows}</div>`;
 }
@@ -580,6 +608,199 @@ async function showSlide(){
 }
 function closeSlide(){ clearTimeout(slideT); slideGen++; fx.ov.hide($('#ovSlide'),()=>{ if(slideH){ slideH.destroy(); slideH=null } }) }
 
+/* ---------- 滿版：點格子放大，再點一下縮回原位 ---------- */
+let fullSrc=null;
+const reducedM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fullHTML(e){
+  const d=parseD(e.date), sibs=S.entries.filter(x=>x.date===e.date&&x.theme===e.theme);
+  return `<div class="bd"></div>
+    ${e.img?`<img class="ph" src="${e.img}" alt="${esc(e.line||'照片')}" data-act="fullclose">`:`<div class="ph txt" data-act="fullclose">${esc(e.line||themeName(e.theme))}</div>`}
+    <div class="fbar"><span class="t">${esc(themeName(e.theme))}</span><button class="link" data-act="fullclose">關掉</button></div>
+    <div class="info">
+      ${e.img&&e.line?`<p class="line">${esc(e.line)}</p>`:''}
+      <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 晚了一點':''}</div>
+      ${sibs.length>1?`<div class="sibs"><span>這一格有 ${sibs.length} 張</span>${sibs.map(x=>`<button class="${x.id===e.id?'on':''}" data-act="fullsib" data-id="${x.id}" aria-label="${fmtTime(x.ts)}">${x.img?`<img src="${x.img}" alt="">`:''}</button>`).join('')}</div>`:''}
+      <button class="link" data-act="fulldel" data-id="${e.id}">刪掉這一則</button>
+    </div>`;
+}
+function openFull(id,src){
+  const e=S.entries.find(x=>x.id===id); if(!e) return;
+  const el=$('#ovFull'), open=el.classList.contains('show')&&!el._hiding;
+  if(src) fullSrc=src;
+  el.innerHTML=fullHTML(e);
+  if(open) return;                                       // 已經開著：只換內容
+  fx.ov.show(el);
+  const G=window.gsap; if(!G||reducedM()) return;
+  G.killTweensOf(el); G.set(el,{opacity:1});           // 不要整層淡入，改成照片自己放大
+  const r=fullSrc&&fullSrc.getBoundingClientRect(); if(!r||!r.width) return;
+  const ph=el.querySelector('.ph');
+  G.fromTo(ph,{left:r.left,top:r.top,width:r.width,height:r.height},{left:0,top:0,width:innerWidth,height:innerHeight,duration:.55,ease:'power3.inOut',clearProps:'left,top,width,height'});
+  G.fromTo(el.querySelector('.bd'),{opacity:0},{opacity:1,duration:.4,ease:'power1.out'});
+  G.fromTo(el.querySelectorAll('.fbar,.info'),{opacity:0},{opacity:1,duration:.3,delay:.4});
+}
+function closeFull(instant){
+  const el=$('#ovFull'); if(!el.classList.contains('show')||el._hiding) return;
+  const done=()=>{ fx.ov.hide(el,()=>{ el.innerHTML='' }); fullSrc=null };
+  const G=window.gsap, src=fullSrc&&document.contains(fullSrc)?fullSrc:null, r=src&&src.getBoundingClientRect();
+  if(instant||!G||reducedM()||!r||!r.width){ done(); return }
+  el._shrinking=true;
+  G.to(el.querySelectorAll('.fbar,.info'),{opacity:0,duration:.15});
+  G.to(el.querySelector('.bd'),{opacity:0,duration:.45,delay:.05});
+  G.to(el.querySelector('.ph'),{left:r.left,top:r.top,width:r.width,height:r.height,duration:.45,ease:'power3.inOut',
+    onComplete:()=>{ el._shrinking=false; G.set(el,{opacity:0}); done() }});
+}
+
+/* ---------- 存下來：9:16（1080×1920）的一天／一週／一個月 ---------- */
+const EXC={bg:'#B8B4AC',paper:'#ECE8DF',paper2:'#DCD7CC',ink:'#1B1A18',ink2:'#5C5850',ink3:'#86817A',safe:'#A8362A',dark:'#2A2826'};
+const EXSERIF='"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif';
+const EXSANS='-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif';
+const imgCache=new Map();
+function loadImg(src){
+  if(imgCache.has(src)) return imgCache.get(src);
+  const p=new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src });
+  imgCache.set(src,p); return p;
+}
+function pickEntry(k,theme){ const es=S.entries.filter(x=>x.date===k&&x.theme===theme); return es.length?(es.find(y=>y.moment)||es[es.length-1]):null }
+function coverDraw(g,im,x,y,w,h){
+  const s=Math.max(w/im.width,h/im.height), sw=w/s, sh=h/s;
+  g.drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,x,y,w,h);
+}
+function spaced(g,txt,x,y,sp,align){
+  const chars=[...txt], ws=chars.map(c=>g.measureText(c).width), tot=ws.reduce((a,b)=>a+b,0)+sp*(chars.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x; const a0=g.textAlign; g.textAlign='left';
+  chars.forEach((c,i)=>{ g.fillText(c,cx,y); cx+=ws[i]+sp }); g.textAlign=a0; return tot;
+}
+function wrapText(g,txt,x,y,maxW,lh,maxLines){
+  let line='', lines=[];
+  for(const c of [...txt]){ if(g.measureText(line+c).width>maxW&&line){ lines.push(line); line=c } else line+=c }
+  if(line) lines.push(line);
+  if(lines.length>maxLines){ lines=lines.slice(0,maxLines); lines[maxLines-1]=lines[maxLines-1].slice(0,-1)+'…' }
+  lines.forEach((l,i)=>g.fillText(l,x,y+i*lh)); return lines.length;
+}
+let grainPat=null;
+function paperBg(g,W,H){
+  g.fillStyle=EXC.bg; g.fillRect(0,0,W,H);
+  if(!grainPat){ const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d'), d=x.createImageData(256,256);
+    for(let i=0;i<d.data.length;i+=4){ const v=Math.random()*255; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255 } x.putImageData(d,0,0); grainPat=c }
+  g.save(); g.globalAlpha=.06; g.fillStyle=g.createPattern(grainPat,'repeat'); g.fillRect(0,0,W,H); g.restore();
+}
+async function frameDraw(g,e,tname,x,y,w,h,fs){
+  if(!e){ g.fillStyle=EXC.paper2; g.fillRect(x,y,w,h); g.fillStyle=EXC.ink3; g.font=`${Math.round(fs*.8)}px ${EXSANS}`; g.textBaseline='alphabetic'; g.fillText(tname,x+fs*.6,y+h-fs*.55); return }
+  const im=e.img?await loadImg(e.img):null;
+  if(im) coverDraw(g,im,x,y,w,h);
+  else{ g.fillStyle=EXC.dark; g.fillRect(x,y,w,h); g.fillStyle=EXC.paper; g.font=`${fs}px ${EXSERIF}`; g.textBaseline='alphabetic';
+    const lh=fs*1.5, n=Math.max(1,Math.floor((h-fs)/lh)); wrapText(g,e.line||tname,x+fs*.7,y+h-fs*.7-(Math.min(n,Math.ceil(g.measureText(e.line||tname).width/(w-fs*1.4)))-1)*lh,w-fs*1.4,lh,n) }
+}
+/* 一條拍貼：o={fw,fh,pad,gap,foot,fs,label,today,future} */
+async function stripDraw(g,k,x,y,o){
+  const W=o.fw+o.pad*2, H=o.pad+o.fh*4+o.gap*3+o.foot;
+  g.save(); if(o.future) g.globalAlpha=.42;
+  g.save(); g.shadowColor='rgba(0,0,0,.22)'; g.shadowBlur=o.pad*1.6; g.shadowOffsetY=o.pad*.5; g.fillStyle=EXC.paper; g.fillRect(x,y,W,H); g.restore();
+  const th=THEMES();
+  for(let i=0;i<4;i++) await frameDraw(g,o.future?null:pickEntry(k,th[i].k),th[i].n,x+o.pad,y+o.pad+i*(o.fh+o.gap),o.fw,o.fh,o.fs);
+  const fy=y+o.pad+o.fh*4+o.gap*3+o.foot*.6;
+  g.textBaseline='middle'; g.fillStyle=EXC.ink; g.font=`600 ${Math.round(o.foot*.34)}px ${EXSERIF}`;
+  spaced(g,'顯影',x+o.pad,fy,o.foot*.12,'left');
+  g.fillStyle=o.today?EXC.safe:EXC.ink2; g.font=`${o.today?'600 ':''}${Math.round(o.foot*.32)}px ${EXSERIF}`; g.textAlign='right'; g.fillText(o.label,x+W-o.pad,fy); g.textAlign='left';
+  g.restore(); return {W,H};
+}
+function header(g,small,big,sub){
+  g.textBaseline='alphabetic'; g.fillStyle=EXC.ink2; g.font=`36px ${EXSANS}`; spaced(g,small,90,170,6,'left');
+  g.fillStyle=EXC.ink; g.font=`600 96px ${EXSERIF}`; g.fillText(big,84,285);
+  if(sub){ g.fillStyle=EXC.ink2; g.font=`40px ${EXSERIF}`; g.fillText(sub,90,345) }
+}
+function brand(g,W,y){ g.fillStyle=EXC.ink; g.font=`600 38px ${EXSERIF}`; g.textBaseline='middle'; spaced(g,'顯影',W/2,y,18,'center') }
+async function renderExport(kind){
+  const W=1080,H=1920, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
+  try{ await document.fonts.ready }catch{}
+  paperBg(g,W,H);
+  const ws=weekStart(S.weekOff), today=dkey(new Date()), now=Date.now();
+  const sel=new Date(ws); sel.setDate(ws.getDate()+(S.dayIdx||0));
+  if(kind==='day'){
+    const k=dkey(sel);
+    header(g,'你 的 一 天',`${sel.getMonth()+1}月${sel.getDate()}日`,`${sel.getFullYear()} · 週${WD[sel.getDay()]}`);
+    const fh=Math.floor((1740-420-28-54-96)/4), fw=Math.round(fh*1.3), o={fw,fh,pad:28,gap:18,foot:96,fs:30,label:k===today?'今天':`${sel.getMonth()+1}.${pad(sel.getDate())} ${WD[sel.getDay()]}`,today:k===today};
+    const sw=fw+56, sh=28+fh*4+54+96, x=(W-sw)/2, y=420;
+    g.save(); g.translate(x+sw/2,y+sh/2); g.rotate(-0.018); await stripDraw(g,k,-sw/2,-sh/2,o); g.restore();
+  }else if(kind==='week'){
+    const e=new Date(ws); e.setDate(ws.getDate()+6);
+    header(g,'你 的 這 一 週',`${ws.getMonth()+1}/${ws.getDate()} – ${e.getMonth()+1}/${e.getDate()}`,`${ws.getFullYear()}`);
+    const cols=4, gx=28, sw=(W-120-gx*(cols-1))/cols, pd=14, fw=Math.round(sw-pd*2), foot=58, top=430, gy=34;
+    const sh=Math.floor((H-top-180-gy)/2), fh=Math.floor((sh-pd-8*3-foot)/4);
+    for(let i=0;i<8;i++){
+      const x=60+(i%cols)*(sw+gx), y=top+Math.floor(i/cols)*(sh+gy);
+      if(i===7){ // 第八格：標籤卡
+        g.save(); g.shadowColor='rgba(0,0,0,.18)'; g.shadowBlur=20; g.shadowOffsetY=6; g.fillStyle=EXC.ink; g.fillRect(x,y,sw,sh); g.restore();
+        g.fillStyle=EXC.paper; g.font=`600 46px ${EXSERIF}`; g.textBaseline='middle'; spaced(g,'顯影',x+sw/2,y+sh/2-30,14,'center');
+        g.font=`26px ${EXSERIF}`; g.globalAlpha=.75; g.textAlign='center'; g.fillText(`${ws.getMonth()+1}/${ws.getDate()} – ${e.getMonth()+1}/${e.getDate()}`,x+sw/2,y+sh/2+36); g.textAlign='left'; g.globalAlpha=1;
+        continue;
+      }
+      const d=new Date(ws); d.setDate(ws.getDate()+i); const k=dkey(d);
+      await stripDraw(g,k,x,y,{fw,fh,pad:pd,gap:8,foot,fs:17,label:k===today?'今天':`${WD[d.getDay()]} ${d.getMonth()+1}.${pad(d.getDate())}`,today:k===today,future:d.getTime()>now&&k!==today});
+    }
+  }else{
+    const m0=new Date(sel.getFullYear(),sel.getMonth(),1), dim=new Date(sel.getFullYear(),sel.getMonth()+1,0).getDate();
+    const lead=(m0.getDay()+6)%7, rows=Math.ceil((lead+dim)/7);
+    header(g,'你 的 這 個 月',`${m0.getMonth()+1}月`,`${m0.getFullYear()}`);
+    const gx=14, cw=(W-120-gx*6)/7, top=470, ch=Math.min(250,(H-top-170-gx*(rows-1))/rows);
+    g.fillStyle=EXC.ink2; g.font=`28px ${EXSERIF}`; g.textBaseline='alphabetic'; g.textAlign='center';
+    ['一','二','三','四','五','六','日'].forEach((c,i)=>g.fillText(c,60+i*(cw+gx)+cw/2,top-22)); g.textAlign='left';
+    for(let n=1;n<=dim;n++){
+      const d=new Date(m0.getFullYear(),m0.getMonth(),n), k=dkey(d), i=lead+n-1, x=60+(i%7)*(cw+gx), y=top+Math.floor(i/7)*(ch+gx);
+      const fut=d.getTime()>now&&k!==today, es=S.entries.filter(z=>z.date===k), pick=es.find(z=>z.moment&&z.img)||es.find(z=>z.img);
+      g.save(); if(fut) g.globalAlpha=.4;
+      g.save(); g.shadowColor='rgba(0,0,0,.16)'; g.shadowBlur=10; g.shadowOffsetY=3; g.fillStyle=EXC.paper; g.fillRect(x,y,cw,ch); g.restore();
+      const ix=x+6, iy=y+6, iw=cw-12, ih=ch-46;
+      const im=pick?await loadImg(pick.img):null;
+      if(im) coverDraw(g,im,ix,iy,iw,ih); else{ g.fillStyle=es.length?EXC.dark:EXC.paper2; g.fillRect(ix,iy,iw,ih) }
+      g.fillStyle=k===today?EXC.safe:EXC.ink; g.font=`${k===today?'600 ':''}24px ${EXSERIF}`; g.textBaseline='middle'; g.fillText(String(n),x+9,y+ch-20);
+      if(es.length>1){ g.fillStyle=EXC.ink3; g.font=`18px ${EXSANS}`; g.textAlign='right'; g.fillText('·'.repeat(Math.min(4,es.length)),x+cw-9,y+ch-20); g.textAlign='left' }
+      g.restore();
+    }
+  }
+  brand(g,W,H-95);
+  return new Promise(res=>cv.toBlob(b=>res(b),'image/jpeg',.92));
+}
+let expGen=0, expBlob=null, expURL=null;
+const EXPN={day:'你的一天',week:'你的這一週',month:'你的這個月'};
+function openSave(){
+  S.exp=S.exp||'week';
+  $('#ovSave').innerHTML=`<div class="in">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><h2>存下來</h2><button class="link" data-act="expclose">關掉</button></div>
+    <div class="seg" id="expSeg">${['day','week','month'].map(k=>`<button data-act="expkind" data-k="${k}">${EXPN[k]}</button>`).join('')}</div>
+    <div class="expv"><div class="pv" id="expPv">正在洗…</div></div>
+    <button class="btn paper wide" data-act="expsave" id="expBtn" disabled>存到手機</button>
+    <div class="note" id="expNote">1080 × 1920 的圖片。</div>
+  </div>`;
+  fx.ov.show($('#ovSave'));
+  buildExport();
+}
+async function buildExport(){
+  const gen=++expGen, k=S.exp;
+  document.querySelectorAll('#expSeg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  const pv=$('#expPv'), btn=$('#expBtn'); if(!pv) return;
+  pv.textContent='正在洗…'; btn.disabled=true;
+  const blob=await renderExport(k);
+  if(gen!==expGen||!$('#expPv')) return;
+  if(expURL) URL.revokeObjectURL(expURL);
+  expBlob=blob; expURL=URL.createObjectURL(blob);
+  pv.innerHTML=`<img src="${expURL}" alt="${EXPN[k]}的預覽">`; btn.disabled=false;
+  const canShare=!!(navigator.canShare&&navigator.canShare({files:[new File([blob],'x.jpg',{type:'image/jpeg'})]}));
+  $('#expNote').textContent=canShare?'1080 × 1920。按下去選「儲存影像」就會進相簿。':'1080 × 1920。會下載成一張 JPG；手機上也可以長按預覽圖儲存。';
+}
+async function saveExport(){
+  if(!expBlob) return;
+  const ws=weekStart(S.weekOff), sel=new Date(ws); sel.setDate(ws.getDate()+(S.dayIdx||0));
+  const tag=S.exp==='day'?dkey(sel):S.exp==='week'?dkey(ws):dkey(sel).slice(0,7);
+  const file=new File([expBlob],`顯影-${EXPN[S.exp]}-${tag}.jpg`,{type:'image/jpeg'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file]}); return }catch(e){ if(e&&e.name==='AbortError') return }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function closeSave(){ expGen++; fx.ov.hide($('#ovSave')) }
+
 /* ---------- 設定 ---------- */
 function openSettings(){
   const st=S.settings||{};
@@ -667,6 +888,14 @@ document.addEventListener('click',async ev=>{
     case 'capsave': S.cap.line=$('[data-line]').value; await saveCap(); break;
     case 'open':{ const r=a.getBoundingClientRect(); openEntry(d.id,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
     case 'wday': goDay(Number(d.i)); break;
+    case 'full': openFull(d.id,a); break;
+    case 'fullsib': openFull(d.id); break;
+    case 'fullclose': closeFull(); break;
+    case 'fulldel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeFull(true); render(); break }
+    case 'save': openSave(); break;
+    case 'expkind': S.exp=d.k; buildExport(); break;
+    case 'expsave': saveExport(); break;
+    case 'expclose': closeSave(); break;
     case 'eclose': closeEntry(); break;
     case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeEntry(); render(); break }
     case 'play': playWeek(); break;
@@ -692,7 +921,7 @@ document.addEventListener('change',async ev=>{
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
 $('#ovSlide').addEventListener('click',closeSlide);
 document.addEventListener('keydown',ev=>{
-  if(ev.key==='Escape'){ closeSlide(); closeEntry(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap(); return }
+  if(ev.key==='Escape'){ closeSlide(); closeEntry(); closeFull(); closeSave(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap(); return }
   // 這週：方向鍵也能翻（桌面用）
   if(S.view!=='week'||document.querySelector('.ov.show')||/INPUT|TEXTAREA/.test((ev.target||{}).tagName||'')) return;
   const k={ArrowLeft:()=>goDay(S.dayIdx-1),ArrowRight:()=>goDay(S.dayIdx+1),ArrowUp:()=>goWeek(-1),ArrowDown:()=>goWeek(1)}[ev.key];
