@@ -959,7 +959,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v6';
+const APP_VER='v7';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
