@@ -1,4 +1,4 @@
-const CACHE = 'xianying-v4';
+const CACHE = 'xianying-v5';
 const ASSETS = [
   './', './index.html', './fx.js', './manifest.webmanifest',
   './vendor/gsap.min.js', './vendor/lenis.min.js', './vendor/lenis.css',
@@ -6,7 +6,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache:'reload'：繞過瀏覽器的 HTTP 快取（GitHub Pages 會讓檔案快取 10 分鐘），確保裝進來的是新版
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -25,7 +26,7 @@ self.addEventListener('fetch', e => {
   // 換頁：網路優先（更新才進得來），離線退回快取
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(r => {
+      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(r => {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put('./index.html', copy));
         return r;

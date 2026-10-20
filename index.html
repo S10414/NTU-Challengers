@@ -816,6 +816,7 @@ function openSettings(){
       <p>所有紀錄和照片都在這支手機裡，沒有上傳。移除 App 或清掉瀏覽器資料就會一起消失。</p>
       <button class="link" data-act="export">匯出成一個檔案</button><br><br>
       <button class="link" data-act="reset">清掉所有紀錄</button></div>
+    <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>
   </div>`;
   fx.ov.show($('#ovSet'));
 }
@@ -940,7 +941,14 @@ setInterval(async()=>{
   if(S.view==='today'&&S.settings&&!S.cap&&bannerSig()!==lastBanner) render();
 },20000);
 
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(e=>console.error('sw',e))) }
+/* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
+const APP_VER='v5';
+if('serviceWorker' in navigator){
+  const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').then(r=>{ swReg=r }).catch(e=>console.error('sw',e)));
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&swReg) swReg.update().catch(()=>{}) });
+}
 load().then(()=>{ render({enter:true}); tickMoment() });
 </script>
 </body>
