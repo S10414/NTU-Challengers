@@ -3,24 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>顯影</title>
+<title>Revela</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#B8B4AC">
+<meta name="theme-color" content="#E6C7B8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="顯影">
+<meta name="apple-mobile-web-app-title" content="Revela">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="stylesheet" href="./vendor/lenis.css">
+<link rel="preload" href="./vendor/fraunces-600.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  @font-face{font-family:"Fraunces";font-style:normal;font-weight:600;font-display:swap;src:url(./vendor/fraunces-600.woff2) format("woff2")}
   :root{
-    --card:#B8B4AC; --paper:#ECE8DF; --paper-2:#DCD7CC;
-    --ink:#1B1A18; --ink-2:#5C5850; --ink-3:#86817A;
-    --safe:#A8362A; --line:rgba(27,26,24,.16);
+    /* 黃昏：上方霧桃粉 → 中間米白的霧 → 地平線 → 褪色的枯草 */
+    --sky:#E6C7B8; --haze:#F2E4D6; --horizon:#E2CFBD; --field:#D4BB9F;
+    --dusk:linear-gradient(180deg,var(--sky) 0%,var(--haze) 46%,var(--horizon) 60%,var(--field) 100%);
+    --card:#EAD8C8; --paper:#FAF3EA; --paper-2:#E8D9CB; --glass:rgba(250,243,234,.66);
+    --ink:#2B211C; --ink-2:#56443A; --ink-3:#6A584C; --dark:#2B221D;
+    --safe:#A84A33; --line:rgba(43,33,28,.16);
+    --word:"Fraunces","Noto Serif TC",Georgia,serif;
     --serif:"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif;
     --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--card);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
+  html{background:var(--card)}
+  body{background:var(--dusk) fixed}
+  html,body{margin:0;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overscroll-behavior-y:contain}
   button,input,textarea{font:inherit;color:inherit}
   button{cursor:pointer}
   :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -35,18 +43,18 @@
 
   #app{position:relative;z-index:1;max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
   header.top{display:flex;align-items:baseline;justify-content:space-between;padding:max(22px,env(safe-area-inset-top)) 22px 10px}
-  header.top h1{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:.08em;margin:0}
+  header.top h1{font-family:var(--word);font-weight:600;font-size:25px;letter-spacing:.005em;margin:0}
   header.top .date{font-size:13px;color:var(--ink-2)}
   main{flex:1;padding:6px 22px 110px}
 
   nav.tabs{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;
-    display:flex;background:var(--card);border-top:1px solid var(--line);
+    display:flex;background:rgba(246,234,222,.72);-webkit-backdrop-filter:blur(16px) saturate(1.1);backdrop-filter:blur(16px) saturate(1.1);border-top:1px solid var(--line);
     padding:8px 10px max(14px,env(safe-area-inset-bottom))}
   nav.tabs button{flex:1;background:none;border:0;padding:10px 4px 14px;font-size:14px;color:var(--ink-3);position:relative;letter-spacing:.04em}
   nav.tabs button.on{color:var(--ink)}
   #navdot{position:absolute;left:0;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 6px);width:4px;height:4px;border-radius:50%;background:var(--ink);pointer-events:none}
 
-  .paper{background:var(--paper);padding:14px 16px;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.04);margin-bottom:10px}
+  .paper{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:14px 16px;border-radius:4px;box-shadow:0 1px 0 rgba(43,33,28,.10),0 0 0 1px rgba(255,255,255,.35) inset;margin-bottom:10px}
   .muted{color:var(--ink-2)} .small{font-size:13px}
   p.lead{font-family:var(--serif);font-size:17px;line-height:1.85;margin:6px 0 14px}
 
@@ -56,16 +64,16 @@
   .btn:disabled{opacity:.45;cursor:default}
   .link{background:none;border:0;padding:0;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;font-size:13px}
 
-  .notice{background:var(--paper);border-left:2px solid var(--safe);padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--ink-2)}
+  .notice{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-left:2px solid var(--safe);padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--ink-2)}
   .notice .btn{margin-top:10px;padding:9px 14px;font-size:14px}
 
   .moment{border-radius:3px;margin:8px 0 18px;text-align:left;width:100%;border:0}
-  .moment.wait{background:var(--paper);padding:16px}
+  .moment.wait{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:16px}
   .moment.wait .t{font-family:var(--serif);font-size:18px;margin:0 0 4px}
-  .moment.now{background:var(--safe);color:var(--paper);padding:26px 18px 22px;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .moment.now{background:var(--safe);color:var(--paper);padding:26px 18px 22px;box-shadow:0 8px 24px rgba(120,52,32,.28)}
   .moment.now .t{font-family:var(--serif);font-size:30px;letter-spacing:.06em;margin:0 0 6px;font-weight:600}
   .moment.now .s{font-size:14px;opacity:.9}
-  .moment.done{background:var(--paper-2);padding:14px 16px;color:var(--ink-2);font-family:var(--serif);font-size:16px}
+  .moment.done{background:rgba(232,217,203,.7);padding:14px 16px;color:var(--ink-2);font-family:var(--serif);font-size:16px}
   .row{display:flex;gap:10px;align-items:center;margin:0 0 18px}
   .entry{display:flex;gap:12px;align-items:flex-start}
   .entry .th{width:64px;height:64px;flex:none;background:var(--paper-2);border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
@@ -85,7 +93,7 @@
   .wdays button{flex:1;background:none;border:0;padding:6px 0 8px;font-family:var(--serif);font-size:14px;color:var(--ink-2);position:relative}
   .wdays button.on{color:var(--ink);font-weight:600}
   .wdays button.on::after{content:"";position:absolute;left:50%;bottom:2px;width:14px;height:2px;margin-left:-7px;background:var(--ink)}
-  .wdays button.td{color:var(--safe)}
+  .wdays button.td{color:#8E3B27}
   .booth{margin:0 -22px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .booth::-webkit-scrollbar,.wtrack::-webkit-scrollbar{display:none}
   .wrow{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative}
@@ -93,22 +101,22 @@
   .wtrack{height:100%;display:flex;align-items:center;gap:var(--gap,16px);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
     overscroll-behavior-x:contain;scrollbar-width:none;padding:0 calc(50% - var(--sw,190px) / 2)}
   .strip{flex:none;width:var(--sw,190px);scroll-snap-align:center;scroll-snap-stop:always;background:var(--paper);padding:10px 10px 0;
-    box-shadow:0 1px 0 rgba(0,0,0,.22),0 6px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
+    box-shadow:0 1px 0 rgba(90,60,40,.18),0 10px 26px rgba(90,60,40,.18);display:flex;flex-direction:column;gap:6px;transition:opacity .3s}
   .strip.future{opacity:.42}
-  .frame{touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:var(--fw,170px);height:var(--fh,140px);background:#2A2826;border:0;padding:0;overflow:hidden;position:relative;display:block}
+  .frame{touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:var(--fw,170px);height:var(--fh,140px);background:var(--dark);border:0;padding:0;overflow:hidden;position:relative;display:block}
   .frame img{width:100%;height:100%;object-fit:cover;filter:saturate(.92) contrast(1.02)}
   .frame.empty{background:var(--paper-2);cursor:default}
   .frame.empty span{position:absolute;left:8px;bottom:6px;font-size:11px;color:var(--ink-3);letter-spacing:.04em}
-  .frame.txt{background:#2A2826;color:var(--paper);font-family:var(--serif);font-size:13px;line-height:1.5;text-align:left;padding:10px;display:flex;align-items:flex-end}
-  .frame .n{position:absolute;right:6px;top:6px;background:rgba(236,232,223,.92);color:var(--ink);font-size:11px;padding:1px 6px;border-radius:999px}
+  .frame.txt{background:var(--dark);color:var(--paper);font-family:var(--serif);font-size:13px;line-height:1.5;text-align:left;padding:10px;display:flex;align-items:flex-end}
+  .frame .n{position:absolute;right:6px;top:6px;background:rgba(250,243,234,.92);color:var(--ink);font-size:11px;padding:1px 6px;border-radius:999px}
   .strip .foot{height:34px;display:flex;align-items:center;justify-content:space-between;font-family:var(--serif);font-size:12px;color:var(--ink-2)}
-  .strip .foot b{font-weight:600;letter-spacing:.18em;color:var(--ink)}
+  .strip .foot b{font-family:var(--word);font-weight:600;font-size:13px;letter-spacing:.01em;color:var(--ink)}
   .strip.today .foot .d{color:var(--safe);font-weight:600}
   /* 滿版：從格子放大 */
   .ov.full{background:transparent;overflow:hidden}
-  .ov.full .bd{position:absolute;inset:0;background:#000}
+  .ov.full .bd{position:absolute;inset:0;background:#120E0C}
   .ov.full .ph{position:fixed;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-out}
-  .ov.full .ph.txt{display:flex;align-items:center;justify-content:center;padding:40px 32px;font-family:var(--serif);font-size:24px;line-height:1.8;color:var(--paper);background:#2A2826;overflow:hidden}
+  .ov.full .ph.txt{display:flex;align-items:center;justify-content:center;padding:40px 32px;font-family:var(--serif);font-size:24px;line-height:1.8;color:var(--paper);background:var(--dark);overflow:hidden}
   .ov.full .fbar{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:baseline;padding:max(20px,env(safe-area-inset-top)) 22px 40px;background:linear-gradient(rgba(0,0,0,.55),transparent);color:var(--paper);pointer-events:none}
   .ov.full .fbar>*{pointer-events:auto}
   .ov.full .fbar .t{font-family:var(--serif);letter-spacing:.08em;font-size:16px}
@@ -122,10 +130,10 @@
   .ov.save .link{color:var(--paper);opacity:.85}
   .ov.save h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0}
   .seg{display:flex;gap:8px;margin:18px 0 16px}
-  .seg button{flex:1;background:transparent;border:1px solid rgba(236,232,223,.45);color:var(--paper);border-radius:999px;padding:9px 4px;font-size:14px}
+  .seg button{flex:1;background:transparent;border:1px solid rgba(250,243,234,.45);color:var(--paper);border-radius:999px;padding:9px 4px;font-size:14px}
   .seg button.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
   .expv{display:flex;justify-content:center;margin:0 0 16px}
-  .expv .pv{height:min(58vh,560px);aspect-ratio:9/16;background:#2A2826;display:flex;align-items:center;justify-content:center;color:rgba(236,232,223,.6);font-family:var(--serif);font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+  .expv .pv{height:min(58vh,560px);aspect-ratio:9/16;background:var(--dark);display:flex;align-items:center;justify-content:center;color:rgba(250,243,234,.6);font-family:var(--serif);font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
   .expv img{height:100%;width:100%;object-fit:contain;display:block}
   .ov.save .btn.paper{background:var(--paper);color:var(--ink);border-color:var(--paper)}
   .ov.save .note{font-size:12px;opacity:.65;margin-top:10px;text-align:center;line-height:1.6}
@@ -135,7 +143,7 @@
   .sibs button.on{border-color:var(--paper)}
   .sibs img{width:100%;height:100%;object-fit:cover}
 
-  .print{background:var(--paper);padding:18px 18px 14px;border-radius:2px;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.05);margin-bottom:14px}
+  .print{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:18px 18px 14px;border-radius:2px;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.05);margin-bottom:14px}
   .print .txt{font-family:var(--serif);font-size:18px;line-height:1.85;margin:0 0 10px}
   .print .when{font-size:12px;color:var(--ink-3);margin-bottom:12px}
   .print .fb{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -157,14 +165,14 @@
   .ov.cap .cd.late{opacity:.6}
   .ov.cap .latemsg{font-size:14px;opacity:.9;min-height:20px;margin-bottom:18px}
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 22px}
-  .chip{background:transparent;border:1px solid rgba(236,232,223,.7);color:var(--paper);border-radius:999px;padding:8px 14px;font-size:14px}
+  .chip{background:transparent;border:1px solid rgba(250,243,234,.7);color:var(--paper);border-radius:999px;padding:8px 14px;font-size:14px}
   .chip.on{background:var(--paper);color:var(--safe);border-color:var(--paper)}
-  .camlab{display:block;border:1px solid rgba(236,232,223,.8);border-radius:2px;padding:16px;text-align:center;font-size:16px;cursor:pointer;margin-bottom:14px}
+  .camlab{display:block;border:1px solid rgba(250,243,234,.8);border-radius:2px;padding:16px;text-align:center;font-size:16px;cursor:pointer;margin-bottom:14px}
   .camlab input{position:absolute;width:1px;height:1px;opacity:0}
   .prev{background:rgba(0,0,0,.18);margin-bottom:14px;max-height:42vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .prev img{max-width:100%;max-height:42vh;object-fit:contain}
-  .ov.cap input.line{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(236,232,223,.7);padding:10px 0;font-family:var(--serif);font-size:18px;color:var(--paper);margin-bottom:22px}
-  .ov.cap input.line::placeholder{color:rgba(236,232,223,.55)}
+  .ov.cap input.line{width:100%;background:transparent;border:0;border-bottom:1px solid rgba(250,243,234,.7);padding:10px 0;font-family:var(--serif);font-size:18px;color:var(--paper);margin-bottom:22px}
+  .ov.cap input.line::placeholder{color:rgba(250,243,234,.55)}
   .ov.cap .btn.paper{background:var(--paper);color:var(--safe);border-color:var(--paper)}
 
   .ov.dark{background:var(--ink);color:var(--paper)}
@@ -184,14 +192,14 @@
   .ov.slide .bar{position:absolute;top:0;left:0;height:2px;background:var(--paper);width:0;z-index:2}
   .ov.slide .stage{display:flex;align-items:center;justify-content:center;width:100%;height:100dvh}
 
-  .ov.sheet2{background:var(--card)}
+  .ov.sheet2{background:var(--dusk)}
   .ov.sheet2 h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0 0 4px}
   .ov.sheet2 .grp{margin:26px 0 0}
   .ov.sheet2 .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
   .ov.sheet2 .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
-  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text]{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
+  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
 
-  .onb h1{font-family:var(--serif);font-size:44px;font-weight:600;letter-spacing:.1em;margin:60px 0 26px}
+  .onb h1{font-family:var(--word);font-size:56px;font-weight:600;letter-spacing:0;margin:60px 0 26px}
   .onb p{font-family:var(--serif);font-size:17px;line-height:1.9;margin:0 0 6px}
   .onb label{display:block;margin:38px 0 8px;font-size:13px;color:var(--ink-2)}
   .onb input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);padding:10px 0;font-family:var(--serif);font-size:20px;margin-bottom:34px}
@@ -202,7 +210,7 @@
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div id="app">
-  <header class="top"><h1>顯影</h1><span class="date" id="hdate"></span></header>
+  <header class="top"><h1>Revela</h1><span class="date" id="hdate"></span></header>
   <main id="view"></main>
   <nav class="tabs" id="tabs">
     <button data-act="nav" data-v="today">今天</button>
@@ -240,7 +248,7 @@ const themeName=k=>(THEMES().find(t=>t.k===k)||{}).n||k;
 /* ---------- 視覺層（fx.js）。沒載入時退回最簡版本，App 照常可用 ---------- */
 const fx=window.FX||{
   ov:{show(el){el.classList.add('show')},hide(el,done){if(!el.classList.contains('show'))return;el.classList.remove('show');done&&done()}},
-  enter(){},develop(){},pulse(){},nav(){window.scrollTo(0,0)},
+  enter(){},develop(){},pulse(){},flow(){},nav(){window.scrollTo(0,0)},
   navDot(v){const dot=$('#navdot'),b=document.querySelector(`#tabs button[data-v="${v}"]`);if(!dot||!b||!b.offsetWidth)return false;dot.style.transform=`translateX(${b.offsetLeft+b.offsetWidth/2-2}px)`;return true},
   photo:{mount(host,o){const img=document.createElement('img');img.alt=(o&&o.label)||'照片';host.appendChild(img);return{setImage:async s=>{img.src=s},develop(){},setProg(){},fit(){},destroy(){img.remove()}}}},
   safelight:{mount(){return null}}
@@ -317,6 +325,7 @@ function bannerSig(){ const m=S.moment||{}; return momentDone()?'done':(m.at&&Da
 function render(o){
   o=o||{};
   $('#hdate').textContent=fmtDate(new Date());
+  $('header.top h1').style.visibility=S.settings?'':'hidden';   // 開場頁已經有大字標，不重複
   if(!S.settings){ $('#tabs').style.display='none'; $('#view').innerHTML=viewOnboard(); if(o.enter) fx.enter($('#view')); return; }
   $('#tabs').style.display='';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
@@ -331,7 +340,7 @@ function render(o){
 }
 function viewOnboard(){
   return `<div class="onb">
-    <h1>顯影</h1>
+    <h1>Revela</h1>
     <p>每天一個隨機的時刻，拍下現在。</p>
     <p>只有你看得到。沒有讚，沒有追蹤，沒有連續天數。</p>
     <p>它會慢慢看，只在看見什麼的時候才說話。</p>
@@ -401,7 +410,7 @@ function stripsHTML(off,full){
     const d=new Date(s); d.setDate(s.getDate()+i); const k=dkey(d), fut=d.getTime()>now&&k!==today;
     const frames=THEMES().map(t=>fut?`<div class="frame empty"><span>${esc(t.n)}</span></div>`:frameHTML(k,t,full)).join('');
     return `<div class="strip ${k===today?'today':''} ${fut?'future':''}" data-i="${i}" aria-label="${d.getMonth()+1}月${d.getDate()}日 週${c}">
-      ${frames}<div class="foot"><b>顯影</b><span class="d">${k===today?'今天':fut?'還沒到':`${d.getMonth()+1}.${pad(d.getDate())} ${c}`}</span></div></div>`;
+      ${frames}<div class="foot"><b>Revela</b><span class="d">${k===today?'今天':fut?'還沒到':`${d.getMonth()+1}.${pad(d.getDate())} ${c}`}</span></div></div>`;
   }).join('');
 }
 function viewWeek(){
@@ -483,7 +492,8 @@ function mountBooth(){
       clearTimeout(vt); vt=setTimeout(hydrateWeeks,140);
     }else if(ev.target.classList&&ev.target.classList.contains('wtrack')&&Number(ev.target.dataset.off)===S.weekOff){
       // 左右：換天
-      const i=Math.max(0,Math.min(6,Math.round(ev.target.scrollLeft/boothStep)));
+      const L=ev.target.scrollLeft, dx=L-(ev.target._lastL??L); ev.target._lastL=L; if(fx.flow) fx.flow(dx);
+      const i=Math.max(0,Math.min(6,Math.round(L/boothStep)));
       if(i!==S.dayIdx){ S.dayIdx=i; syncWeekHead() }
     }
   },{capture:true,passive:true});
@@ -668,7 +678,9 @@ function closeFull(instant){
 }
 
 /* ---------- 存下來：9:16（1080×1920）的一天／一週／一個月 ---------- */
-const EXC={bg:'#B8B4AC',paper:'#ECE8DF',paper2:'#DCD7CC',ink:'#1B1A18',ink2:'#5C5850',ink3:'#86817A',safe:'#A8362A',dark:'#2A2826'};
+const EXC={bg:'#EAD8C8',paper:'#FAF3EA',paper2:'#E8D9CB',ink:'#2B211C',ink2:'#56443A',ink3:'#6A584C',safe:'#A84A33',dark:'#2B221D',
+  sky:'#E6C7B8',haze:'#F2E4D6',horizon:'#E2CFBD',field:'#D4BB9F'};
+const EXWORD='"Fraunces","Noto Serif TC",Georgia,serif';
 const EXSERIF='"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif';
 const EXSANS='-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif';
 const imgCache=new Map();
@@ -696,7 +708,17 @@ function wrapText(g,txt,x,y,maxW,lh,maxLines){
 }
 let grainPat=null;
 function paperBg(g,W,H){
-  g.fillStyle=EXC.bg; g.fillRect(0,0,W,H);
+  const gr=g.createLinearGradient(0,0,0,H);
+  gr.addColorStop(0,EXC.sky); gr.addColorStop(.46,EXC.haze); gr.addColorStop(.6,EXC.horizon); gr.addColorStop(1,EXC.field);
+  g.fillStyle=gr; g.fillRect(0,0,W,H);
+  // 車窗外流過的樹影：很淡、很糊的一條帶
+  g.save(); g.filter='blur(28px)'; g.globalAlpha=.16; g.fillStyle='#8C786B';
+  for(let x=-60;x<W+60;x+=70){ const h=60+((x*37)%90); g.beginPath(); g.ellipse(x,H*.58-h*.35,48,h,0,0,Math.PI*2); g.fill() }
+  g.restore();
+  // 水平的動態模糊紋
+  g.save(); g.globalAlpha=.035; g.filter='blur(1.5px)';
+  for(let y=0;y<H;y+=6){ const v=(Math.sin(y*.071)+Math.sin(y*.023+1.7))*.5; g.fillStyle=v>0?'#FFF7EE':'#6E5847'; g.fillRect(0,y,W,3) }
+  g.restore();
   if(!grainPat){ const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d'), d=x.createImageData(256,256);
     for(let i=0;i<d.data.length;i+=4){ const v=Math.random()*255; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255 } x.putImageData(d,0,0); grainPat=c }
   g.save(); g.globalAlpha=.06; g.fillStyle=g.createPattern(grainPat,'repeat'); g.fillRect(0,0,W,H); g.restore();
@@ -717,7 +739,7 @@ async function stripDraw(g,k,x,y,o){
   for(let i=0;i<4;i++) await frameDraw(g,o.future?null:pickEntry(k,th[i].k),th[i].n,x+o.pad,y+o.pad+i*(o.fh+o.gap),o.fw,o.fh,o.fs);
   const fy=y+o.pad+o.fh*4+o.gap*3+o.foot*.6;
   g.textBaseline='middle'; g.fillStyle=EXC.ink; g.font=`600 ${Math.round(o.foot*.34)}px ${EXSERIF}`;
-  spaced(g,'顯影',x+o.pad,fy,o.foot*.12,'left');
+  g.font=`600 ${Math.round(o.foot*.36)}px ${EXWORD}`; g.fillText('Revela',x+o.pad,fy);
   g.fillStyle=o.today?EXC.safe:EXC.ink2; g.font=`${o.today?'600 ':''}${Math.round(o.foot*.32)}px ${EXSERIF}`; g.textAlign='right'; g.fillText(o.label,x+W-o.pad,fy); g.textAlign='left';
   g.restore(); return {W,H};
 }
@@ -726,10 +748,10 @@ function header(g,small,big,sub){
   g.fillStyle=EXC.ink; g.font=`600 96px ${EXSERIF}`; g.fillText(big,84,285);
   if(sub){ g.fillStyle=EXC.ink2; g.font=`40px ${EXSERIF}`; g.fillText(sub,90,345) }
 }
-function brand(g,W,y){ g.fillStyle=EXC.ink; g.font=`600 38px ${EXSERIF}`; g.textBaseline='middle'; spaced(g,'顯影',W/2,y,18,'center') }
+function brand(g,W,y){ g.fillStyle=EXC.ink; g.font=`600 46px ${EXWORD}`; g.textBaseline='middle'; g.textAlign='center'; g.fillText('Revela',W/2,y); g.textAlign='left' }
 async function renderExport(kind){
   const W=1080,H=1920, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d');
-  try{ await document.fonts.ready }catch{}
+  try{ await document.fonts.load('600 40px "Fraunces"'); await document.fonts.ready }catch{}
   paperBg(g,W,H);
   const ws=weekStart(S.weekOff), today=dkey(new Date()), now=Date.now();
   const sel=new Date(ws); sel.setDate(ws.getDate()+(S.dayIdx||0));
@@ -747,8 +769,8 @@ async function renderExport(kind){
     for(let i=0;i<8;i++){
       const x=60+(i%cols)*(sw+gx), y=top+Math.floor(i/cols)*(sh+gy);
       if(i===7){ // 第八格：標籤卡
-        g.save(); g.shadowColor='rgba(0,0,0,.18)'; g.shadowBlur=20; g.shadowOffsetY=6; g.fillStyle=EXC.ink; g.fillRect(x,y,sw,sh); g.restore();
-        g.fillStyle=EXC.paper; g.font=`600 46px ${EXSERIF}`; g.textBaseline='middle'; spaced(g,'顯影',x+sw/2,y+sh/2-30,14,'center');
+        g.save(); g.shadowColor='rgba(0,0,0,.18)'; g.shadowBlur=20; g.shadowOffsetY=6; g.fillStyle=EXC.dark; g.fillRect(x,y,sw,sh); g.restore();
+        g.fillStyle=EXC.paper; g.font=`600 52px ${EXWORD}`; g.textBaseline='middle'; g.textAlign='center'; g.fillText('Revela',x+sw/2,y+sh/2-30); g.textAlign='left';
         g.font=`26px ${EXSERIF}`; g.globalAlpha=.75; g.textAlign='center'; g.fillText(`${ws.getMonth()+1}/${ws.getDate()} – ${e.getMonth()+1}/${e.getDate()}`,x+sw/2,y+sh/2+36); g.textAlign='left'; g.globalAlpha=1;
         continue;
       }
@@ -809,7 +831,7 @@ async function saveExport(){
   if(!expBlob) return;
   const ws=weekStart(S.weekOff), sel=new Date(ws); sel.setDate(ws.getDate()+(S.dayIdx||0));
   const tag=S.exp==='day'?dkey(sel):S.exp==='week'?dkey(ws):dkey(sel).slice(0,7);
-  const file=new File([expBlob],`顯影-${EXPN[S.exp]}-${tag}.jpg`,{type:'image/jpeg'});
+  const file=new File([expBlob],`Revela-${EXPN[S.exp]}-${tag}.jpg`,{type:'image/jpeg'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     try{ await navigator.share({files:[file]}); return }catch(e){ if(e&&e.name==='AbortError') return }
   }
@@ -841,7 +863,7 @@ function openSettings(){
 /* ---------- 顯影：觀察者 ---------- */
 function systemPrompt(){
   const habit=(S.settings&&S.settings.habit)||'習慣';
-  return `你是「顯影」裡的觀察者。使用者用這個 app 隨機記錄真實生活的片段（照片＋一句話），分成四個主題：日常、身邊的人、所在之處、習慣（${habit}）。你只做一件事：長期看這些紀錄，只在真的看見一個「跨越時間的模式」時才開口。
+  return `你是「Revela」這個 app 裡的觀察者（功能名稱叫「顯影」）。使用者用這個 app 隨機記錄真實生活的片段（照片＋一句話），分成四個主題：日常、身邊的人、所在之處、習慣（${habit}）。你只做一件事：長期看這些紀錄，只在真的看見一個「跨越時間的模式」時才開口。
 
 你會收到：所有紀錄的日期、星期、時段、主題、一句話（JSON），最近幾張照片（依時間排序，最後一張最新），以及你過去說過的話和使用者的回應。
 
@@ -925,7 +947,7 @@ document.addEventListener('click',async ev=>{
     case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣',apiKey:$('#setKey').value.trim()});
       await kvSet('settings',S.settings); fx.ov.hide($('#ovSet')); render(); break }
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
-      const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='顯影-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
+      const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
     case 'reset':{ if(!confirm('清掉所有紀錄與它說過的話？這無法復原。')) break;
       await clearEntries(); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
       for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
@@ -959,7 +981,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v7';
+const APP_VER='v8';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });

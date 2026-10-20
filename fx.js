@@ -1,4 +1,4 @@
-/* fx.js — 顯影的視覺層
+/* fx.js — Revela 的視覺層
    Lenis  → 平滑捲動，並提供捲動速度給背景
    GSAP   → 全部動態與時間軸（也是唯一的 ticker）
    WebGL  → 視覺核心：① 照片「顯影」 ② 拍攝時的暗房安全燈 ③ 常駐的底片質感背景
@@ -56,35 +56,44 @@
     'uniform vec2 uRes;uniform float uT;uniform float uFrame;uniform float uLeft;',
     'void main(){',
     '  vec2 uv=vUv; float asp=uRes.x/uRes.y;',
-    '  vec3 base=vec3(.6588,.2118,.1647);',
+    '  vec3 base=vec3(.640,.282,.196);',
     '  vec2 c=(uv-vec2(.5,.8))*vec2(asp,1.);',
     '  float lamp=exp(-dot(c,c)*3.2);',
     '  float br=1.+.018*sin(uT*.9)+.01*sin(uT*2.3+1.);',
     '  float k=mix(.8,1.,uLeft);',
     '  float f=fbm(uv*vec2(asp,1.)*2.2+vec2(0.,uT*.03));',
     '  vec3 col=base*k*(.93+.07*lamp*br+(f-.5)*.05);',
-    '  col+=vec3(.035,.009,.006)*lamp*k;',
+    '  col+=vec3(.030,.012,.006)*lamp*k;',
     '  col*=1.-.2*smoothstep(.4,1.2,length((uv-.5)*vec2(asp,1.)));',
     '  col+=(hash(floor(uv*uRes)+uFrame*vec2(7.,13.))-.5)*.028;',
     '  gl_FragColor=vec4(col,1.);',
     '}'
   ].join('\n');
 
-  /* ③ 底片質感背景。平均色就是 #B8B4AC，起伏壓在 ±3% 以內，不影響任何文字對比。
-        捲動速度讓它起一點漣漪，換頁時有一道「藥水」由下往上掃過。 */
+  /* ③ 黃昏背景。抽象化的「車窗外的黃昏」：上方霧桃粉、中間米白的霧、下方褪色的枯草，
+        地平線一條很淡的模糊樹影，整片帶著水平的動態模糊紋與底片顆粒。
+        uFlow 讓景物往旁邊流過（左右滑換天、捲動時都會推一點）；明度起伏壓得很小，不影響文字對比。 */
   var AMB_FRAG = PRE + NOISE + [
-    'uniform vec2 uRes;uniform float uT;uniform float uFrame;uniform float uVel;uniform float uWash;',
+    'uniform vec2 uRes;uniform float uT;uniform float uFrame;uniform float uVel;uniform float uWash;uniform float uFlow;',
     'void main(){',
-    '  vec2 uv=vUv; float asp=uRes.x/uRes.y;',
-    '  vec3 base=vec3(.7216,.7059,.6745);',
-    '  float f=fbm(vec2(uv.x*asp,uv.y)*1.6+vec2(0.,uT*.012));',
-    '  float lum=(f-.47)*.05;',
-    '  lum+=sin(uv.y*9.-uT*.5)*uVel*.014;',
-    '  float band=exp(-pow((uv.y-uWash)*5.,2.))*step(.001,uWash)*step(uWash,.999);',
-    '  lum+=band*.03;',
-    '  lum+=(hash(floor(uv*uRes)+uFrame*vec2(17.,31.))-.5)*.03;',
-    '  lum-=(1.-smoothstep(1.1,.3,length((uv-.5)*vec2(asp*.8,1.))))*.02;',
-    '  gl_FragColor=vec4(base*(1.+lum),1.);',
+    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float y=uv.y;',
+    '  vec3 sky=vec3(.902,.780,.722), haze=vec3(.949,.894,.839), hor=vec3(.886,.812,.741), fld=vec3(.831,.733,.624);',
+    '  vec3 col=mix(fld,hor,smoothstep(0.,.40,y));',
+    '  col=mix(col,haze,smoothstep(.40,.54,y));',
+    '  col=mix(col,sky,smoothstep(.54,1.,y));',
+    '  float fl=uT*.006+uFlow;',
+    '  float st=fbm(vec2(uv.x*asp*.32+fl,y*16.));',
+    '  float ground=1.-smoothstep(.30,.46,y);',
+    '  col*=1.+(st-.5)*(.025+.05*ground);',
+    '  float tb=fbm(vec2(uv.x*asp*1.1+fl*1.7,2.3));',
+    '  float top=.43+tb*.085;',
+    '  float tree=smoothstep(top,top-.07,y)*smoothstep(.33,.41,y);',
+    '  col=mix(col,vec3(.55,.47,.42),tree*.16);',
+    '  col*=1.+sin(y*40.+fl*30.)*uVel*.006;',
+    '  float band=exp(-pow((y-uWash)*5.,2.))*step(.001,uWash)*step(uWash,.999);',
+    '  col+=band*.025;',
+    '  col+=(hash(floor(uv*uRes)+uFrame*vec2(17.,31.))-.5)*.032;',
+    '  gl_FragColor=vec4(col,1.);',
     '}'
   ].join('\n');
 
@@ -152,7 +161,7 @@
   var ovOpen = 0;                 // 開著的全螢幕疊層數；>0 時背景暫停繪製
   var photos = [];                // 活著的照片 handle
   var safe = null;                // 目前的安全燈 handle（同時只會有一個）
-  var A = { q: null, vel: 0, wash: 0, washing: false, dirty: true, last: 0 };
+  var A = { q: null, vel: 0, wash: 0, washing: false, dirty: true, last: 0, flow: 0, fv: 0 };
   var lastSafe = 0;
 
   var dprCap = function () { return Math.min(window.devicePixelRatio || 1, 2); };
@@ -177,7 +186,7 @@
     var q = A.q, t = reduced() ? 0 : (now - T0) / 1000;
     q.set('uRes', [q.w, q.h]); q.set('uT', t);
     q.set('uFrame', reduced() ? 0 : frameNo(now));
-    q.set('uVel', A.vel); q.set('uWash', A.wash);
+    q.set('uVel', A.vel); q.set('uWash', A.wash); q.set('uFlow', A.flow);
     if (q.draw()) $('#bg').classList.add('on');
   }
 
@@ -189,7 +198,8 @@
     if (A.q && A.q.ok && !document.hidden && ovOpen === 0) {
       var v = lenis ? Math.min(1, Math.abs(lenis.velocity) / 40) : 0;
       A.vel += (v - A.vel) * 0.12;
-      var moving = A.vel > 0.01 || A.washing;
+      if (!reduced()) { A.flow += A.fv + (lenis ? lenis.velocity * 0.00003 : 0); A.fv *= 0.9; if (Math.abs(A.fv) < 1e-5) A.fv = 0; }
+      var moving = A.vel > 0.01 || A.washing || A.fv !== 0;
       var gap = reduced() ? Infinity : (moving ? 33 : 83);
       if (A.dirty || now - A.last >= gap) { drawAmbient(now); A.last = now; A.dirty = false; }
     }
@@ -233,7 +243,7 @@
     var h = {
       prog: 0, seed: Math.random() * 40, dirty: true, img: null, tw: null, destroyed: false,
       q: null, cv: null, fb: null, tex: null, shown: false,
-      base: o.base || [0.925, 0.91, 0.875],
+      base: o.base || [0.98, 0.953, 0.918],
       label: o.label || '',
       box: o.box || function () { return { w: host.clientWidth || innerWidth, h: innerHeight * 0.62 }; }
     };
@@ -474,6 +484,8 @@
     info: function () { return { gsap: hasGSAP, lenis: !!lenis, ambient: !!(A.q && A.q.ok), reduced: reduced(), overlays: ovOpen, photos: photos.length }; },
     ov: ov,
     enter: enter, develop: developText, pulse: pulse, nav: nav, navDot: navDot,
+    /* 左右滑換天時呼叫：背景像車窗外的景一樣往旁邊流過一點 */
+    flow: function (dx) { if (!reduced() && A.q) A.fv += (dx || 0) * 0.00004; },
     photo: { mount: mountPhoto },
     safelight: { mount: mountSafelight }
   };

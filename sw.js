@@ -1,7 +1,7 @@
-const CACHE = 'xianying-v7';
+const CACHE = 'xianying-v8';
 const ASSETS = [
   './', './index.html', './fx.js', './manifest.webmanifest',
-  './vendor/gsap.min.js', './vendor/lenis.min.js', './vendor/lenis.css',
+  './vendor/gsap.min.js', './vendor/lenis.min.js', './vendor/lenis.css', './vendor/fraunces-600.woff2',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'
 ];
 
