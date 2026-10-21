@@ -10,6 +10,6 @@
    anon key 本來就設計成可以放在前端，真正的保護是資料庫的 Row Level Security（RLS），
    一定要先打開，否則任何人都能讀到別人的照片。 */
 window.SUPABASE_CONFIG = {
-  url:     'https://YOUR-PROJECT-REF.supabase.co',
-  anonKey: 'PASTE-YOUR-ANON-KEY-HERE'
+  url:     'https://qjuevgidreeexnrkiowc.supabase.co',
+  anonKey: 'sb_publishable_YchGuZhKtGQxqR7lk55k3A_R9T1aQQT'
 };
