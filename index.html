@@ -197,8 +197,13 @@
   .ov.sheet2 .grp{margin:26px 0 0}
   .ov.sheet2 .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
   .ov.sheet2 .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
-  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
+  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text],.ov.sheet2 input[type=email]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
 
+  .bk .st{font-size:13px;color:var(--ink-2);line-height:1.7;margin:0 0 10px}
+  .bk .err{color:#8E3B27}
+  .bk .row2{display:flex;gap:8px;align-items:center}
+  .bk .row2 input{flex:1;margin-bottom:0!important}
+  .bk .row2 .btn{flex:none;padding:11px 14px}
   .onb h1{font-family:var(--word);font-size:56px;font-weight:600;letter-spacing:0;margin:60px 0 26px}
   .onb p{font-family:var(--serif);font-size:17px;line-height:1.9;margin:0 0 6px}
   .onb label{display:block;margin:38px 0 8px;font-size:13px;color:var(--ink-2)}
@@ -229,6 +234,8 @@
 <script src="./vendor/gsap.min.js"></script>
 <script src="./vendor/lenis.min.js"></script>
 <script src="./fx.js"></script>
+<script src="./supabase-config.js"></script>
+<script src="./vendor/supabase.min.js"></script>
 <script>
 /* ---------- 基本 ---------- */
 const $=s=>document.querySelector(s);
@@ -260,10 +267,11 @@ let dbp=null;
 function db(){
   if(dbp) return dbp;
   dbp=new Promise((res,rej)=>{
-    const r=indexedDB.open(DB,1);
+    const r=indexedDB.open(DB,2);
     r.onupgradeneeded=()=>{ const d=r.result;
       if(!d.objectStoreNames.contains('entries')) d.createObjectStore('entries',{keyPath:'id'});
       if(!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
+      if(!d.objectStoreNames.contains('photos')) d.createObjectStore('photos');   // 原圖（Blob），key = entry id
     };
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
   });
@@ -282,6 +290,10 @@ const kvDel=async k=>{ try{ await tx('kv','readwrite',s=>s.delete(k)) }catch{} }
 const allEntries=async()=>{ try{ return (await tx('entries','readonly',s=>s.getAll()))||[] }catch{ return [] } };
 const putEntry=async e=>{ try{ await tx('entries','readwrite',s=>s.put(e)) }catch(err){ console.error('save failed',err); alert('存不進去，可能是空間不足。') } };
 const delEntry=async id=>{ try{ await tx('entries','readwrite',s=>s.delete(id)) }catch{} };
+const putPhoto=async(id,b)=>{ try{ await tx('photos','readwrite',s=>s.put(b,id)) }catch(err){ console.error('photo save failed',err) } };
+const getPhoto=async id=>{ try{ return await tx('photos','readonly',s=>s.get(id)) }catch{ return undefined } };
+const delPhoto=async id=>{ try{ await tx('photos','readwrite',s=>s.delete(id)) }catch{} };
+const clearPhotos=async()=>{ try{ await tx('photos','readwrite',s=>s.clear()) }catch{} };
 const clearEntries=async()=>{ try{ await tx('entries','readwrite',s=>s.clear()) }catch{} };
 
 async function load(){
@@ -351,6 +363,7 @@ function viewOnboard(){
 }
 function notices(){
   let out='';
+  if(SB.client&&!SB.user&&S.entries.length>=3) out+=`<div class="notice">照片現在只存在這支手機。登入之後會自動備份，換手機也拿得回來。<br><button class="btn" data-act="settings">去登入</button></div>`;
   const standalone=matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
   if(!standalone){
@@ -567,21 +580,45 @@ function renderCap(){
   `;
   cdEl();
 }
-async function compress(file){
+/* 一張照片存兩份：
+   full：長邊 2560px、JPEG .86 的原圖（Blob），給滿版、播放、備份用
+   img ：長邊 720px 的縮圖（dataURL），給拍貼格子、列表、觀察者用（觀察者只看縮圖，不送原圖） */
+const FULL_PX=2560, FULL_Q=.86, THUMB_PX=720, THUMB_Q=.82;
+function drawScaled(src,M){
+  const s=Math.min(1,M/Math.max(src.width,src.height)), w=Math.round(src.width*s), h=Math.round(src.height*s);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const g=cv.getContext('2d'); g.imageSmoothingQuality='high'; g.drawImage(src,0,0,w,h); return cv;
+}
+async function processPhoto(file){
   try{
     const bmp=await createImageBitmap(file,{imageOrientation:'from-image'});
-    const M=560, s=Math.min(1,M/Math.max(bmp.width,bmp.height));
-    const w=Math.round(bmp.width*s), h=Math.round(bmp.height*s);
-    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-    cv.getContext('2d').drawImage(bmp,0,0,w,h); bmp.close&&bmp.close();
-    return cv.toDataURL('image/jpeg',.7);
-  }catch{ return null }
+    const full=await new Promise(r=>drawScaled(bmp,FULL_PX).toBlob(r,'image/jpeg',FULL_Q));
+    const img=drawScaled(bmp,THUMB_PX).toDataURL('image/jpeg',THUMB_Q);
+    bmp.close&&bmp.close();
+    return {img,full};
+  }catch(err){ console.error(err); return null }
 }
+async function thumbFromBlob(b){
+  try{ const bmp=await createImageBitmap(b); const u=drawScaled(bmp,THUMB_PX).toDataURL('image/jpeg',THUMB_Q); bmp.close&&bmp.close(); return u }catch{ return null }
+}
+/* 原圖網址（有原圖就用原圖，沒有就退回縮圖）；只留最近 16 張的 object URL */
+const fullURLs=new Map();
+async function photoURL(e){
+  if(!e||!e.img) return e&&e.img;
+  if(fullURLs.has(e.id)) return fullURLs.get(e.id);
+  const b=await getPhoto(e.id); if(!b) return e.img;
+  const u=URL.createObjectURL(b); fullURLs.set(e.id,u);
+  if(fullURLs.size>16){ const [k,v]=fullURLs.entries().next().value; URL.revokeObjectURL(v); fullURLs.delete(k) }
+  return u;
+}
+function forgetURL(id){ const u=fullURLs.get(id); if(u){ URL.revokeObjectURL(u); fullURLs.delete(id) } }
 async function saveCap(){
   const c=S.cap; if(!c||!c.theme) return;
   const now=new Date();
-  const e={id:String(now.getTime()),ts:now.getTime(),date:dkey(now),theme:c.theme,line:c.line.trim(),img:c.img,late:(Date.now()-c.start)>120000,moment:c.moment};
+  const e={id:String(now.getTime()),ts:now.getTime(),date:dkey(now),theme:c.theme,line:c.line.trim(),img:c.img,late:(Date.now()-c.start)>120000,moment:c.moment,sync:'pending'};
+  if(c.full) await putPhoto(e.id,c.full);
   S.entries.push(e); await putEntry(e); closeCap(); S.view='today'; render();
+  syncSoon();
 }
 
 /* ---------- 單則 / 播放 ---------- */
@@ -603,7 +640,7 @@ async function openEntry(id,pt){
   if(!ove.classList.contains('show')||ove._hiding) fx.ov.show(ove,pt?{from:pt}:{});
   if(e.img){
     const h=fx.photo.mount($('#entryBig'),{label:e.line||'照片'}); entryH=h;
-    await h.setImage(e.img,e.line||'照片');
+    await h.setImage(await photoURL(e),e.line||'照片');
     if(entryH===h) h.develop(2.4,.12);
   }
 }
@@ -623,7 +660,7 @@ function playWeek(){
 }
 async function showSlide(){
   const gen=slideGen, x=slideList[slideI], d=parseD(x.date);
-  await slideH.setImage(x.img,x.line||'照片');
+  await slideH.setImage(await photoURL(x),x.line||'照片');
   if(gen!==slideGen||!slideH) return;
   $('#slLine').textContent=x.line||''; $('#slMeta').textContent=`${fmtDate(d)} ${fmtTime(x.ts)} · ${themeName(x.theme)}`;
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -652,7 +689,9 @@ function openFull(id,src){
   const e=S.entries.find(x=>x.id===id); if(!e) return;
   const el=$('#ovFull'), open=el.classList.contains('show')&&!el._hiding;
   if(src) fullSrc=src;
-  el.innerHTML=fullHTML(e);
+  el.innerHTML=fullHTML(e); el.dataset.cur=e.id;
+  // 先用縮圖立刻放大，原圖讀好之後無縫換上
+  if(e.img) photoURL(e).then(u=>{ if(!u||u===e.img||el.dataset.cur!==e.id) return; const im=new Image(); im.onload=()=>{ const ph=el.querySelector('img.ph'); if(ph&&el.dataset.cur===e.id) ph.src=u }; im.src=u });
   if(open) return;                                       // 已經開著：只換內容
   fx.ov.show(el);
   const G=window.gsap; if(!G||reducedM()) return;
@@ -840,6 +879,132 @@ async function saveExport(){
 }
 function closeSave(){ expGen++; fx.ov.hide($('#ovSave')) }
 
+/* ---------- 雲端備份（Supabase） ----------
+   登入：email 驗證碼（iPhone 主畫面 App 點信裡的連結會跳去 Safari，登入狀態帶不回來，所以用輸入碼）
+   上傳：每一則先存本機，標成 pending；有網路又登入時，照片 → Storage photos/<uid>/<id>.jpg，資料 → entries 表
+   還原：登入後把雲端有、本機沒有的拉回來（原圖存本機、重新做縮圖）
+   刪除：本機刪掉的 id 記在 syncDel，下次同步時也刪雲端 */
+const SB={client:null,user:null,busy:false,err:'',last:0,again:false};
+S.bk={step:'email',email:'',msg:''};
+function sbInit(){
+  const c=window.SUPABASE_CONFIG;
+  if(!c||!window.supabase||!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(c.url||'')||!c.anonKey||/PASTE|YOUR/.test(c.anonKey)) return;
+  try{
+    SB.client=window.supabase.createClient(c.url.replace(/\/$/,''),c.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'revela-auth'}});
+  }catch(err){ console.error('supabase',err); SB.client=null; return }
+  SB.client.auth.onAuthStateChange((ev,session)=>{
+    const u=session?session.user:null, changed=(u&&u.id)!==(SB.user&&SB.user.id);
+    SB.user=u;
+    if(changed){ refreshBk(); if(S.settings&&!S.cap) render(); if(u) setTimeout(()=>syncAll(),0) }
+  });
+}
+async function sbSend(){
+  const em=(($('#bkEmail')||{}).value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ S.bk.msg='email 看起來不太對。'; refreshBk(); return }
+  S.bk={step:'email',email:em,msg:'寄送中…'}; refreshBk();
+  const {error}=await SB.client.auth.signInWithOtp({email:em,options:{shouldCreateUser:true}});
+  if(error){ S.bk.msg=/rate|limit|seconds/i.test(error.message)?'寄得太頻繁了，等一下再試。':'寄不出去：'+error.message; refreshBk(); return }
+  S.bk={step:'code',email:em,msg:''}; refreshBk(); setTimeout(()=>{ const i=$('#bkCode'); i&&i.focus() },60);
+}
+async function sbVerify(){
+  const code=(($('#bkCode')||{}).value||'').replace(/\D/g,'');
+  if(code.length<6){ S.bk.msg='輸入信裡的數字驗證碼。'; refreshBk(); return }
+  S.bk.msg='確認中…'; refreshBk();
+  const {error}=await SB.client.auth.verifyOtp({email:S.bk.email,token:code,type:'email'});
+  if(error){ S.bk.msg=/expired|invalid/i.test(error.message)?'驗證碼不對或過期了，再寄一次。':'登入沒有成功：'+error.message; refreshBk(); return }
+  S.bk={step:'email',email:'',msg:''};   // onAuthStateChange 會接手：更新畫面並開始同步
+}
+function bkHTML(){
+  if(!SB.client) return `<h3>備份</h3><p>雲端備份還沒設定好（supabase-config.js）。</p>`;
+  if(!SB.user){
+    const b=S.bk, msg=b.msg?`<p class="st ${/不對|沒有|寄不出|頻繁/.test(b.msg)?'err':''}">${esc(b.msg)}</p>`:'';
+    if(b.step==='code') return `<h3>備份</h3><p>驗證碼寄到 ${esc(b.email)} 了，輸入信裡的數字。</p>
+      <div class="row2"><input type="text" id="bkCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="驗證碼"><button class="btn fill" data-act="sbverify">登入</button></div>
+      ${msg}<p style="margin-top:10px"><button class="link" data-act="sbback">換一個 email／重寄</button></p>`;
+    return `<h3>備份</h3><p>登入之後，照片會自動備份到雲端，換手機也拿得回來。只有登入的你看得到自己的照片。</p>
+      <div class="row2"><input type="email" id="bkEmail" autocomplete="email" placeholder="你的 email" value="${esc(b.email)}"><button class="btn fill" data-act="sbsend">寄驗證碼</button></div>${msg}`;
+  }
+  const total=S.entries.length, done=S.entries.filter(e=>e.sync==='done').length;
+  const st=SB.busy?'備份中…':SB.err?SB.err:(done===total?`全部 ${total} 則都備份好了。`:`${done}／${total} 則已備份，其餘有網路時會自動補上。`);
+  return `<h3>備份</h3><p class="st">已登入 ${esc(SB.user.email||'')}</p>
+    <p class="st ${SB.err?'err':''}">${esc(st)}${SB.last&&!SB.busy?`<br>上次同步：${rel(SB.last)}`:''}</p>
+    <div class="row2" style="margin-bottom:12px"><button class="btn" data-act="sbsync" ${SB.busy?'disabled':''}>立即同步</button></div>
+    <button class="link" data-act="sbout">登出</button>　<button class="link" data-act="sbwipe">刪除雲端上的所有資料</button>`;
+}
+function dataNote(){ return SB.user?'紀錄和照片存在這支手機，也會備份到雲端；雲端只有登入的你看得到。':'紀錄和照片目前只存在這支手機。移除 App 或清掉瀏覽器資料就會一起消失；登入備份就不會。' }
+function refreshBk(){ const g=$('#bkGrp'); if(g) g.innerHTML=bkHTML(); const n=$('#dataNote'); if(n) n.textContent=dataNote() }
+let syncT=null;
+function syncSoon(ms){ clearTimeout(syncT); syncT=setTimeout(()=>syncAll(),ms==null?600:ms) }
+async function queueDel(id){ if(!SB.client) return; const l=await kvGet('syncDel')||[]; if(!l.includes(id)){ l.push(id); await kvSet('syncDel',l) } syncSoon() }
+async function syncAll(manual){
+  if(!SB.client||!SB.user) return;
+  if(SB.busy){ SB.again=true; return }
+  if(!navigator.onLine){ if(manual){ SB.err='現在沒有網路，連上之後會自動補上。'; refreshBk() } return }
+  SB.busy=true; SB.err=''; refreshBk();
+  const uid=SB.user.id, store=SB.client.storage.from('photos');
+  try{
+    // 換了帳號：本機全部重新上傳到新帳號
+    if((await kvGet('syncUid'))!==uid){ for(const e of S.entries){ if(e.sync){ delete e.sync; await putEntry(e) } } await kvSet('syncUid',uid) }
+    // 1) 刪除
+    const dels=await kvGet('syncDel')||[];
+    for(const id of dels.slice()){
+      await store.remove([`${uid}/${id}.jpg`]);
+      const {error}=await SB.client.from('entries').delete().eq('user_id',uid).eq('id',id); if(error) throw error;
+      dels.splice(dels.indexOf(id),1); await kvSet('syncDel',dels);
+    }
+    // 2) 上傳
+    for(const e of S.entries.slice()){
+      if(e.sync==='done') continue;
+      let blob=null;
+      if(e.img){ blob=await getPhoto(e.id); if(!blob){ blob=await (await fetch(e.img)).blob() } }   // 舊紀錄沒有原圖，就備份手上最好的那張
+      if(blob){ const {error}=await store.upload(`${uid}/${e.id}.jpg`,blob,{upsert:true,contentType:'image/jpeg',cacheControl:'31536000'}); if(error) throw error }
+      const {error}=await SB.client.from('entries').upsert({user_id:uid,id:e.id,ts:e.ts,date:e.date,theme:e.theme,line:e.line||'',late:!!e.late,moment:!!e.moment,has_photo:!!blob,updated_at:new Date().toISOString()});
+      if(error) throw error;
+      e.sync='done'; await putEntry(e); refreshBk();
+    }
+    // 3) 還原：雲端有、本機沒有
+    const have=new Set(S.entries.map(e=>e.id)), skip=new Set(await kvGet('syncDel')||[]);
+    let added=0;
+    for(let from=0;;from+=1000){
+      const {data,error}=await SB.client.from('entries').select('id,ts,date,theme,line,late,moment,has_photo').order('ts').range(from,from+999);
+      if(error) throw error;
+      for(const r of data||[]){
+        if(have.has(r.id)||skip.has(r.id)) continue;
+        const e={id:r.id,ts:Number(r.ts),date:r.date,theme:r.theme,line:r.line||'',late:!!r.late,moment:!!r.moment,img:null,sync:'done'};
+        if(r.has_photo){ const {data:b,error:er}=await store.download(`${uid}/${r.id}.jpg`); if(!er&&b){ await putPhoto(r.id,b); e.img=await thumbFromBlob(b) } }
+        S.entries.push(e); await putEntry(e); have.add(r.id); added++;
+      }
+      if(!data||data.length<1000) break;
+    }
+    if(added){ S.entries.sort((a,b)=>a.ts-b.ts); if(!S.cap) render() }
+    SB.last=Date.now(); await kvSet('syncLast',SB.last);
+  }catch(err){ console.error('sync',err); SB.err='這次備份沒有成功，等一下會自己再試。' }
+  SB.busy=false; refreshBk();
+  if(SB.again){ SB.again=false; syncSoon(300) }
+}
+async function sbWipe(){
+  if(!SB.user) return;
+  if(!confirm('刪除雲端上你所有的照片和紀錄，並且登出？\n這支手機上的紀錄不受影響。雲端的部分無法復原。')) return;
+  const uid=SB.user.id, store=SB.client.storage.from('photos');
+  SB.busy=true; refreshBk();
+  try{
+    for(;;){
+      const {data,error}=await store.list(uid,{limit:1000}); if(error) throw error;
+      if(!data||!data.length) break;
+      const {error:e2}=await store.remove(data.map(o=>`${uid}/${o.name}`)); if(e2) throw e2;
+      if(data.length<1000) break;
+    }
+    const {error}=await SB.client.from('entries').delete().eq('user_id',uid); if(error) throw error;
+    for(const e of S.entries){ if(e.sync){ delete e.sync; await putEntry(e) } }
+    await kvDel('syncDel'); await kvDel('syncUid');
+    await SB.client.auth.signOut({scope:'local'});
+    SB.busy=false; alert('雲端上的資料已經刪掉了。');
+  }catch(err){ console.error(err); SB.busy=false; SB.err='刪除沒有完成，請再試一次。' }
+  refreshBk(); render();
+}
+window.addEventListener('online',()=>syncSoon(800));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&SB.user&&Date.now()-SB.last>60000) syncSoon(1500) });
+
 /* ---------- 設定 ---------- */
 function openSettings(){
   const st=S.settings||{};
@@ -851,8 +1016,9 @@ function openSettings(){
       <p>觀察者需要一組 Anthropic API 金鑰才能運作。金鑰只存在這支手機裡，不會傳給別人。這是給自己測試用的做法，正式上線要改由伺服器保管。</p>
       <input type="password" id="setKey" placeholder="sk-ant-..." value="${esc(st.apiKey||'')}"></div>
     <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button></div>
+    <div class="grp bk" id="bkGrp">${bkHTML()}</div>
     <div class="grp"><h3>資料</h3>
-      <p>所有紀錄和照片都在這支手機裡，沒有上傳。移除 App 或清掉瀏覽器資料就會一起消失。</p>
+      <p id="dataNote">${dataNote()}</p>
       <button class="link" data-act="export">匯出成一個檔案</button><br><br>
       <button class="link" data-act="reset">清掉所有紀錄</button></div>
     <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>
@@ -931,32 +1097,39 @@ document.addEventListener('click',async ev=>{
     case 'full': openFull(d.id,a); break;
     case 'fullsib': openFull(d.id); break;
     case 'fullclose': closeFull(); break;
-    case 'fulldel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeFull(true); render(); break }
+    case 'fulldel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); await delPhoto(d.id); forgetURL(d.id); queueDel(d.id); closeFull(true); render(); break }
     case 'save': openSave(); break;
     case 'expkind': S.exp=d.k; buildExport(); break;
     case 'expsave': saveExport(); break;
     case 'expclose': closeSave(); break;
     case 'eclose': closeEntry(); break;
-    case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); closeEntry(); render(); break }
+    case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); await delPhoto(d.id); forgetURL(d.id); queueDel(d.id); closeEntry(); render(); break }
     case 'play': playWeek(); break;
     case 'check': runAgent(); break;
     case 'react':{ const m=S.agentLog.find(x=>x.id===d.id); if(m){ m.reaction=d.r; await kvSet('agentLog',S.agentLog); render() } break }
     case 'reply':{ const m=S.agentLog.find(x=>x.id===d.id); const ta=document.querySelector(`[data-reply="${d.id}"]`); if(m&&ta&&ta.value.trim()){ m.reply=ta.value.trim().slice(0,200); await kvSet('agentLog',S.agentLog) } render(); break }
     case 'settings': openSettings(); break;
+    case 'sbsend': sbSend(); break;
+    case 'sbverify': sbVerify(); break;
+    case 'sbback': S.bk={step:'email',email:S.bk.email}; refreshBk(); break;
+    case 'sbsync': syncAll(true); break;
+    case 'sbout':{ if(!confirm('登出之後，這支手機上的紀錄還在，但不會再備份。')) break; try{ await SB.client.auth.signOut({scope:'local'}) }catch{} refreshBk(); render(); break }
+    case 'sbwipe': sbWipe(); break;
     case 'setclose': fx.ov.hide($('#ovSet')); break;
     case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣',apiKey:$('#setKey').value.trim()});
       await kvSet('settings',S.settings); fx.ov.hide($('#ovSet')); render(); break }
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
       const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
-    case 'reset':{ if(!confirm('清掉所有紀錄與它說過的話？這無法復原。')) break;
-      await clearEntries(); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
+    case 'reset':{ if(!confirm(SB.user?'清掉這支手機上的所有紀錄與它說過的話？雲端備份不受影響，這支手機會一併登出。':'清掉所有紀錄與它說過的話？這無法復原。')) break;
+      if(SB.client&&SB.user){ try{ await SB.client.auth.signOut({scope:'local'}) }catch{} }
+      await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
       for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
       S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today';
       fx.ov.hide($('#ovSet')); await ensureMoment(); render(); break }
   }
 });
 document.addEventListener('change',async ev=>{
-  if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=$('[data-line]').value; S.cap.img=await compress(f); renderCap() }
+  if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=$('[data-line]').value; const r=await processPhoto(f); S.cap.img=r?r.img:null; S.cap.full=r?r.full:null; renderCap() }
 });
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
 $('#ovSlide').addEventListener('click',closeSlide);
@@ -981,14 +1154,14 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v8';
+const APP_VER='v9';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').then(r=>{ swReg=r }).catch(e=>console.error('sw',e)));
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&swReg) swReg.update().catch(()=>{}) });
 }
-load().then(()=>{ render({enter:true}); tickMoment() });
+load().then(async()=>{ SB.last=await kvGet('syncLast')||0; sbInit(); render({enter:true}); tickMoment() });
 </script>
 </body>
 </html>

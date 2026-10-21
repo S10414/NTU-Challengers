@@ -73,3 +73,16 @@ iOS 的限制：通知只有在「從主畫面圖示打開」的情況下才能�
 - 照片壓到 560px、JPEG 品質 0.7 才存，一則大約 40–80KB。
 - 全部存在瀏覽器的 IndexedDB。**移除 App、清掉瀏覽器資料、或 iOS 長時間沒用自動清理，資料都會消失。**
 - 設定裡有「匯出成一個檔案」，測試期間建議偶爾匯出備份。
+
+## 雲端備份（Supabase）
+
+照片拍下時存兩份：長邊 2560px 的原圖（滿版、播放、備份用）和 720px 縮圖（拍貼格子、列表、觀察者用；觀察者只看縮圖）。
+登入後每一則會自動備份到 Supabase；換手機登入同一個 email 就會還原。
+
+第一次設定（只要做一次）：
+1. `supabase-config.js` 填 Project URL 與 publishable / anon key（**不要**填 service_role / secret key）。
+2. Supabase 後台 → SQL Editor，整段執行 `supabase/setup.sql`（建資料表、私人照片空間、只有本人能讀寫的權限）。
+3. Authentication → Emails → **Magic Link** 範本，內文加上 `{{ .Token }}`，信裡才會有數字驗證碼（iPhone 主畫面 App 用連結登入會跳去 Safari，所以用驗證碼）。
+4. 內建寄信服務每小時只能寄很少封，只適合自己測試；給種子使用者用之前，到 Authentication → SMTP Settings 接自己的寄信服務（例如 Resend）。
+
+套件：supabase-js 2.117.1（MIT，`vendor/supabase.min.js`）、Fraunces 字型（OFL，`vendor/fraunces-600.woff2`）。
