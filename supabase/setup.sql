@@ -58,3 +58,22 @@ create policy "photos: delete own" on storage.objects
 -- 檢查：下面兩行應該都回傳 true
 select relrowsecurity as entries_rls_on from pg_class where oid = 'public.entries'::regclass;
 select public = false as photos_bucket_private from storage.buckets where id = 'photos';
+
+-- ===== 每個帳號的用量上限（匿名登入開放後防濫用），每人最多 6000 則紀錄／6000 張照片 =====
+create or replace function public.enforce_entry_quota() returns trigger language plpgsql security invoker set search_path='' as $$
+begin
+  if (select count(*) from public.entries where user_id=new.user_id) >= 6000 then
+    raise exception 'entry quota exceeded' using errcode='check_violation';
+  end if;
+  return new;
+end; $$;
+drop trigger if exists entries_quota on public.entries;
+create trigger entries_quota before insert on public.entries for each row execute function public.enforce_entry_quota();
+
+drop policy if exists "photos: insert own" on storage.objects;
+create policy "photos: insert own" on storage.objects for insert to authenticated
+  with check (bucket_id='photos' and (storage.foldername(name))[1]=(select auth.uid())::text
+    and (select count(*) from storage.objects o where o.bucket_id='photos' and (storage.foldername(o.name))[1]=(select auth.uid())::text) < 6000);
+
+-- 選用：定期清掉 30 天前建立、一直沒綁 email 的匿名帳號（相關資料會一併消失）
+-- delete from auth.users where is_anonymous is true and created_at < now() - interval '30 days';

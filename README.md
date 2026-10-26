@@ -86,3 +86,15 @@ iOS 的限制：通知只有在「從主畫面圖示打開」的情況下才能�
 4. 內建寄信服務每小時只能寄很少封，只適合自己測試；給種子使用者用之前，到 Authentication → SMTP Settings 接自己的寄信服務（例如 Resend）。
 
 套件：supabase-js 2.117.1（MIT，`vendor/supabase.min.js`）、Fraunces 字型（OFL，`vendor/fraunces-600.woff2`）。
+
+## 匿名登入 + 選填綁定 email（v10）
+
+App 第一次開啟會在背景用 Supabase 匿名登入，照片自動備份，使用者不用輸入任何東西。想換手機也拿得回來的人，才到「設定 → 備份」綁定 email。
+
+Dashboard 要開：
+1. Authentication → Sign In / Providers → 打開 **Allow anonymous sign-ins**，同時打開 **Allow manual linking**。
+2. Authentication → Email Templates：**Magic Link** 和 **Change Email Address** 兩個樣板都要放 `{{ .Token }}`（App 用 6 位數驗證碼）。
+3. 公開給很多人用之前：Authentication → Attack Protection 開 CAPTCHA（Turnstile／hCaptcha）。匿名登入預設每個 IP 每小時 30 次，校園 Wi-Fi 同 IP 的人多時會被擋。
+4. 在 SQL Editor 重跑 `supabase/setup.sql`（含每帳號 6000 則的用量上限）。
+
+行為：email 沒人用過 → 把匿名帳號升級成 email 帳號（照片不用重傳）；email 已有帳號 → 改登入該帳號，這支手機的紀錄補傳進去、雲端的還原回來。設定裡可以暫停備份。沒綁 email 的匿名帳號，清掉瀏覽器資料就找不回來。

@@ -1,4 +1,4 @@
-const CACHE = 'xianying-v9';
+const CACHE = 'xianying-v10';
 const ASSETS = [
   './', './index.html', './fx.js', './manifest.webmanifest',
   './vendor/gsap.min.js', './vendor/lenis.min.js', './vendor/lenis.css', './vendor/fraunces-600.woff2', './vendor/supabase.min.js', './supabase-config.js',
