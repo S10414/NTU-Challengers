@@ -98,3 +98,13 @@ Dashboard 要開：
 4. 在 SQL Editor 重跑 `supabase/setup.sql`（含每帳號 6000 則的用量上限）。
 
 行為：email 沒人用過 → 把匿名帳號升級成 email 帳號（照片不用重傳）；email 已有帳號 → 改登入該帳號，這支手機的紀錄補傳進去、雲端的還原回來。設定裡可以暫停備份。沒綁 email 的匿名帳號，清掉瀏覽器資料就找不回來。
+
+## 顯影的後端（v12）
+
+觀察者「顯影」不再讓使用者自己填金鑰。App 呼叫 Supabase Edge Function `observe`（原始碼在 `supabase/functions/observe/index.ts`），由後端用我們自己的 Anthropic 金鑰呼叫 Claude。
+
+- 金鑰：Supabase → Edge Functions → Secrets，新增 `ANTHROPIC_API_KEY`。金鑰只存在後端，不進 App、不進 GitHub。
+- 誰能呼叫：函式開啟 JWT 驗證，只有登入過的使用者（含匿名帳號）叫得動。
+- 提示詞（system prompt）放在後端，使用者改不了，也不能把它當成免費的通用 Claude 用。
+- 用量上限：每個帳號每天最多 6 次（台北時間，`DAILY_LIMIT`），計數放在 `observe_usage` 資料表，只有後端讀得到。請求大小、照片張數也有上限。
+- 費用：每次呼叫約是 10 張縮圖加整份紀錄文字。上線前請到 Anthropic Console 設定月額度上限。

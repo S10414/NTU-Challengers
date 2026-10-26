@@ -527,11 +527,11 @@ function goWeek(dir){
 function agentReady(){ const days=new Set(S.entries.map(e=>e.date)); return S.entries.length>=6&&days.size>=3 }
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
 function agentSec(){
-  const hasKey=!!(S.settings&&S.settings.apiKey);
+  const hasKey=agentCan();
   let status;
   if(S.busy) status='它在看。';
   else if(S.err) status=S.err;
-  else if(!hasKey) status='還沒接上。到設定填一組 API 金鑰，它才看得了。';
+  else if(!hasKey) status=bkOn()?'還在準備。連上網路之後它就開始看。':'它需要雲端備份開著才看得了。到設定重新開啟備份。';
   else if(!agentReady()) status='還在累積。它需要幾天的紀錄，才看得出什麼是反覆出現的。';
   else if(!S.agentMeta.lastCheck) status='還沒看過。';
   else status=`上次看是${rel(S.agentMeta.lastCheck)}。${S.agentMeta.lastSpoke?'':'那次沒有想說的。'}`;
@@ -903,7 +903,7 @@ function sbInit(){
   SB.client.auth.onAuthStateChange((ev,session)=>{
     const u=session?session.user:null, changed=(u&&u.id)!==(SB.user&&SB.user.id);
     SB.user=u; refreshBk();
-    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(()=>syncAll(),0) }
+    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(()=>{ syncAll(); maybeAutoRun() },0) }
   });
   SB.client.auth.getSession().then(()=>sbEnsure());
 }
@@ -1071,9 +1071,6 @@ function viewSettings(){
   return `<h2>設定</h2>
     <div class="grp"><h3>習慣主題</h3>
       <input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"></div>
-    <div class="grp"><h3>顯影用的金鑰</h3>
-      <p>觀察者需要一組 Anthropic API 金鑰才能運作。金鑰只存在這支手機裡，不會傳給別人。這是給自己測試用的做法，正式上線要改由伺服器保管。</p>
-      <input type="password" id="setKey" placeholder="sk-ant-..." value="${esc(st.apiKey||'')}"></div>
     <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button><p id="setMsg" class="small muted" style="margin-top:8px"></p></div>
     <div class="grp bk" id="bkGrp">${bkHTML()}</div>
     <div class="grp"><h3>資料</h3>
@@ -1084,54 +1081,30 @@ function viewSettings(){
 }
 
 /* ---------- 顯影：觀察者 ---------- */
-function systemPrompt(){
-  const habit=(S.settings&&S.settings.habit)||'習慣';
-  return `你是「Revela」這個 app 裡的觀察者（功能名稱叫「顯影」）。使用者用這個 app 隨機記錄真實生活的片段（照片＋一句話），分成四個主題：日常、身邊的人、所在之處、習慣（${habit}）。你只做一件事：長期看這些紀錄，只在真的看見一個「跨越時間的模式」時才開口。
-
-你會收到：所有紀錄的日期、星期、時段、主題、一句話（JSON），最近幾張照片（依時間排序，最後一張最新），以及你過去說過的話和使用者的回應。
-
-怎麼決定：
-1. 沒有跨時間的模式，或紀錄還太少、太短（少於一週或不到八則），就不要開口：speak=false。沉默是正常的，也是好的。多數時候你應該沉默。
-2. 一則紀錄的內容不是模式。模式是「反覆出現」或「明顯改變」：同一個地方、同一個時段、同一種東西、某一天之後變得不一樣。
-3. 有把握的行為模式，用「說」（mode=say）：具體指出你看到什麼，然後停下。不解釋意義，不給建議。
-4. 涉及詮釋、你沒把握的，用「問」（mode=ask）：講出你注意到的，用一個問題把詮釋權交回給對方。
-5. 使用者回過「不是這樣」的觀察，不要再用同一個角度。回過「有這回事」的，可以延續，但不要重複講同一件事。
-6. 一次只說一件事，兩句以內。台灣的中文口語，像一個安靜、認識很久的朋友：不熱情、不鼓勵、不下結論。
-
-絕對不做：
-- 不評估或猜測心情、狀態、心理健康。不說「你好像很累／低落／迷茫／快樂」。
-- 不給方向、建議、鼓勵、稱讚。不說「加油」「很棒」「繼續保持」「可以試試」。
-- 不算成就。不講連續幾天、達成幾次。次數只用來描述模式（「這兩週有一半的晚上」），不當成績。
-- 不跟任何人比較。
-- 不用「數據」「分析」「偵測」「紀錄顯示」這類字。
-
-只輸出 JSON，沒有其他文字、沒有 markdown 圍欄：
-{"speak": true 或 false, "mode": "say" 或 "ask", "text": "要說的話；speak=false 時為空字串", "why": "一句話給你自己的備註"}`;
-}
+/* 顯影在我們自己的後端（Supabase Edge Function「observe」）執行，金鑰只存在後端 */
+const agentCan=()=>!!(SB.client&&SB.user&&bkOn());
 async function runAgent(){
-  const key=S.settings&&S.settings.apiKey;
-  if(S.busy||!agentReady()||!key) return;
+  if(S.busy||!agentReady()||!agentCan()) return;
   S.busy=true; S.err=''; render();
   try{
+    const {data:ss}=await SB.client.auth.getSession(); const tok=ss&&ss.session&&ss.session.access_token; if(!tok) throw new Error('auth');
     const log=S.entries.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',late:!!e.late,moment:!!e.moment}));
-    const imgs=S.entries.filter(e=>e.img).slice(-10).map(e=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:e.img.split(',')[1]}}));
+    const imgs=S.entries.filter(e=>e.img).slice(-10).map(e=>e.img.split(',')[1]);
     const past=S.agentLog.map(m=>({when:new Date(m.ts).toISOString().slice(0,10),mode:m.mode,said:m.text,reaction:m.reaction||null,reply:m.reply||''}));
-    const payload={today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past};
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt(),messages:[{role:'user',content:[...imgs,{type:'text',text:JSON.stringify(payload)}]}]})});
-    const data=await res.json();
-    if(data.error) throw new Error(data.error.message||'api');
-    const text=(data.content||[]).map(b=>b.type==='text'?b.text:'').join('').replace(/```json|```/g,'').trim();
-    const out=JSON.parse(text);
+    const res=await fetch(window.SUPABASE_CONFIG.url.replace(/\/$/,'')+'/functions/v1/observe',{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok,'apikey':window.SUPABASE_CONFIG.anonKey},
+      body:JSON.stringify({today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past,images:imgs})});
+    const out=await res.json().catch(()=>({}));
+    if(res.status===429){ S.err='今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
+    if(!res.ok||out.error) throw new Error(out.error||('http '+res.status));
     S.agentMeta={lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:!!(out.speak&&out.text)};
     if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:''}); await kvSet('agentLog',S.agentLog) }
     await kvSet('agentMeta',S.agentMeta);
-  }catch(e){ console.error(e); S.err='它這次沒看清楚（連線或金鑰出了問題）。等一下再讓它看一次。' }
+  }catch(e){ console.error(e); S.err='它這次沒看清楚。等一下再讓它看一次。' }
   S.busy=false; render();
 }
 function maybeAutoRun(){
-  if(!agentReady()||S.busy||!(S.settings&&S.settings.apiKey)) return;
+  if(!agentReady()||S.busy||!agentCan()) return;
   const m=S.agentMeta, fresh=m.lastCheck&&(Date.now()-m.lastCheck)<20*36e5;
   if(!fresh&&S.entries.length>(m.lastCount||0)) runAgent();
 }
@@ -1141,7 +1114,7 @@ document.addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-act]'); if(!a) return;
   const d=a.dataset;
   switch(d.act){
-    case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date()),apiKey:''}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
+    case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date())}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
     case 'nav': if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
@@ -1176,7 +1149,7 @@ document.addEventListener('click',async ev=>{
     case 'sbretry': SB.anonErr=''; sbEnsure(); break;
     case 'bkhint': S.settings=Object.assign({},S.settings,{hintSeen:true}); await kvSet('settings',S.settings); if(d.go==='1') openSettings(); render(); break;
     case 'sbwipe': sbWipe(); break;
-    case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣',apiKey:$('#setKey').value.trim()});
+    case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣'});
       await kvSet('settings',S.settings); const m=$('#setMsg'); if(m) m.textContent='存好了。'; break }
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
       const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
@@ -1215,7 +1188,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v11';
+const APP_VER='v12';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
