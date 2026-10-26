@@ -151,6 +151,9 @@
   .print .fb .chosen{font-size:13px;color:var(--ink-2)}
   .print textarea{width:100%;margin-top:10px;background:transparent;border:0;border-bottom:1px solid var(--ink-3);padding:6px 0;resize:none;font-family:var(--serif);font-size:15px;line-height:1.6}
   .print .reply{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin-top:10px;padding-left:10px;border-left:2px solid var(--ink-3)}
+  .agent-sec{margin-top:44px;padding-top:22px;border-top:1px solid var(--line)}
+  .agent-sec h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 6px}
+  .agent-sec .lead{font-size:15px;color:var(--ink-2);margin:0 0 10px}
   .status{font-family:var(--serif);font-size:16px;line-height:1.8;color:var(--ink-2);margin:0 0 14px}
 
   .ov{position:fixed;inset:0;z-index:50;overflow:auto;display:none}
@@ -193,11 +196,11 @@
   .ov.slide .stage{display:flex;align-items:center;justify-content:center;width:100%;height:100dvh}
 
   .ov.sheet2{background:var(--dusk)}
-  .ov.sheet2 h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0 0 4px}
-  .ov.sheet2 .grp{margin:26px 0 0}
-  .ov.sheet2 .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
-  .ov.sheet2 .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
-  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text],.ov.sheet2 input[type=email]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
+  .ov.sheet2 h2,#view.v-settings h2{font-family:var(--serif);font-size:22px;font-weight:600;margin:0 0 4px}
+  .ov.sheet2 .grp,#view.v-settings .grp{margin:26px 0 0}
+  .ov.sheet2 .grp h3,#view.v-settings .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
+  .ov.sheet2 .grp p,#view.v-settings .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
+  .ov.sheet2 input[type=password],.ov.sheet2 input[type=text],.ov.sheet2 input[type=email],#view.v-settings input[type=password],#view.v-settings input[type=text],#view.v-settings input[type=email]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
 
   .bk .st{font-size:13px;color:var(--ink-2);line-height:1.7;margin:0 0 10px}
   .bk .err{color:#8E3B27}
@@ -220,14 +223,13 @@
   <nav class="tabs" id="tabs">
     <button data-act="nav" data-v="today">今天</button>
     <button data-act="nav" data-v="week">這週</button>
-    <button data-act="nav" data-v="agent">顯影</button>
+    <button data-act="nav" data-v="settings">設定</button>
     <i id="navdot" aria-hidden="true"></i>
   </nav>
 </div>
 <div class="ov cap" id="ovCap" data-lenis-prevent><div class="in" id="capBody"></div></div>
 <div class="ov dark" id="ovEntry" data-lenis-prevent></div>
 <div class="ov slide" id="ovSlide" data-lenis-prevent></div>
-<div class="ov sheet2" id="ovSet" data-lenis-prevent></div>
 <div class="ov full" id="ovFull" data-lenis-prevent></div>
 <div class="ov save" id="ovSave" data-lenis-prevent></div>
 
@@ -343,11 +345,12 @@ function render(o){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
   if(!o.nav&&dotView!==S.view&&fx.navDot(S.view,true)) dotView=S.view;
   $('#view').className='v-'+S.view;
-  $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewAgent();
+  if(!['today','week','settings'].includes(S.view)) S.view='today';
+  $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewSettings();
   if(S.view==='week') mountBooth();
   if(o.enter) fx.enter($('#view'));
-  fx.pulse(S.busy&&S.view==='agent'?$('#view .status'):null);
-  if(S.view==='agent'){ const f=$('#view [data-fresh] .txt'); if(f){ S.freshId=null; fx.develop(f) } }
+  fx.pulse(S.busy&&S.view==='today'?$('#view .status'):null);
+  if(S.view==='today'){ const f=$('#view [data-fresh] .txt'); if(f){ S.freshId=null; fx.develop(f) } }
   lastBanner=bannerSig();
 }
 function viewOnboard(){
@@ -388,7 +391,8 @@ function viewToday(){
   const items=list.length?list.map(entryRow).join(''):`<div class="empty">今天還沒有紀錄。<br>不一定要等時刻到，想記就記。</div>`;
   return `${notices()}${banner}
     <div class="row"><button class="btn" data-act="cap">記一下</button><span class="small muted">兩分鐘內拍好。來不及也可以。</span></div>
-    ${items}`;
+    ${items}
+    ${agentSec()}`;
 }
 function entryRow(e){
   return `<div class="paper entry"><button data-act="open" data-id="${e.id}">
@@ -522,7 +526,7 @@ function goWeek(dir){
 }
 function agentReady(){ const days=new Set(S.entries.map(e=>e.date)); return S.entries.length>=6&&days.size>=3 }
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
-function viewAgent(){
+function agentSec(){
   const hasKey=!!(S.settings&&S.settings.apiKey);
   let status;
   if(S.busy) status='它在看。';
@@ -538,11 +542,11 @@ function viewAgent(){
       `<button class="btn" data-act="react" data-id="${m.id}" data-r="yes">有這回事</button><button class="btn" data-act="react" data-id="${m.id}" data-r="no">不是這樣</button>`}</div>
     ${m.reply?`<div class="reply">${esc(m.reply)}</div>`:(m.reaction?`<textarea rows="1" placeholder="想補一句的話（可以不寫）" data-reply="${m.id}"></textarea><div style="margin-top:8px"><button class="link" data-act="reply" data-id="${m.id}">送出</button></div>`:'')}
   </div>`).join('');
-  return `<p class="lead">它一直在看，只在真的看見什麼的時候才開口。<br>它不會告訴你該怎麼做，也不會猜你的心情。</p>
+  return `<section class="agent-sec"><h2>顯影</h2>
+    <p class="lead">它一直在看，只在真的看見什麼的時候才開口。它不會告訴你該怎麼做，也不會猜你的心情。</p>
     <p class="status">${esc(status)}</p>
     <div class="row"><button class="btn" data-act="check" ${(S.busy||!agentReady()||!hasKey)?'disabled':''}>讓它看一次</button></div>
-    ${prints}
-    <div style="margin-top:40px"><button class="link" data-act="settings">設定</button></div>`;
+    ${prints}</section>`;
 }
 
 /* ---------- 拍下 ---------- */
@@ -1061,24 +1065,22 @@ window.addEventListener('online',()=>{ sbEnsure(); syncSoon(800) });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&SB.user&&Date.now()-SB.last>60000) syncSoon(1500) });
 
 /* ---------- 設定 ---------- */
-function openSettings(){
+function openSettings(){ if(S.view!=='settings'){ S.view='settings'; render({enter:true,nav:true}); dotView='settings'; fx.nav('settings') } }
+function viewSettings(){
   const st=S.settings||{};
-  $('#ovSet').innerHTML=`<div class="in">
-    <div style="display:flex;justify-content:space-between;align-items:baseline"><h2>設定</h2><button class="link" data-act="setclose">關掉</button></div>
+  return `<h2>設定</h2>
     <div class="grp"><h3>習慣主題</h3>
       <input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"></div>
     <div class="grp"><h3>顯影用的金鑰</h3>
       <p>觀察者需要一組 Anthropic API 金鑰才能運作。金鑰只存在這支手機裡，不會傳給別人。這是給自己測試用的做法，正式上線要改由伺服器保管。</p>
       <input type="password" id="setKey" placeholder="sk-ant-..." value="${esc(st.apiKey||'')}"></div>
-    <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button></div>
+    <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button><p id="setMsg" class="small muted" style="margin-top:8px"></p></div>
     <div class="grp bk" id="bkGrp">${bkHTML()}</div>
     <div class="grp"><h3>資料</h3>
       <p id="dataNote">${dataNote()}</p>
       <button class="link" data-act="export">匯出成一個檔案</button><br><br>
       <button class="link" data-act="reset">清掉所有紀錄</button></div>
-    <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>
-  </div>`;
-  fx.ov.show($('#ovSet'));
+    <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>`;
 }
 
 /* ---------- 顯影：觀察者 ---------- */
@@ -1140,7 +1142,7 @@ document.addEventListener('click',async ev=>{
   const d=a.dataset;
   switch(d.act){
     case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date()),apiKey:''}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
-    case 'nav': if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='agent') maybeAutoRun(); break;
+    case 'nav': if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
     case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
@@ -1174,9 +1176,8 @@ document.addEventListener('click',async ev=>{
     case 'sbretry': SB.anonErr=''; sbEnsure(); break;
     case 'bkhint': S.settings=Object.assign({},S.settings,{hintSeen:true}); await kvSet('settings',S.settings); if(d.go==='1') openSettings(); render(); break;
     case 'sbwipe': sbWipe(); break;
-    case 'setclose': fx.ov.hide($('#ovSet')); break;
     case 'setsave':{ S.settings=Object.assign({},S.settings,{habit:($('#setHabit').value||'習慣').trim().slice(0,8)||'習慣',apiKey:$('#setKey').value.trim()});
-      await kvSet('settings',S.settings); fx.ov.hide($('#ovSet')); render(); break }
+      await kvSet('settings',S.settings); const m=$('#setMsg'); if(m) m.textContent='存好了。'; break }
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
       const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
     case 'reset':{ if(!confirm(SB.user?'清掉這支手機上的所有紀錄與它說過的話？雲端備份不會被刪（要刪請先在設定裡按「刪除雲端上的所有資料」）。這支手機會登出，沒有綁定 email 的話，雲端那份之後就找不回來了。':'清掉所有紀錄與它說過的話？這無法復原。')) break;
@@ -1185,7 +1186,7 @@ document.addEventListener('click',async ev=>{
       await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
       for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
       S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today';
-      fx.ov.hide($('#ovSet')); await ensureMoment(); render(); break }
+      await ensureMoment(); render(); break }
   }
 });
 document.addEventListener('change',async ev=>{
@@ -1194,7 +1195,7 @@ document.addEventListener('change',async ev=>{
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
 $('#ovSlide').addEventListener('click',closeSlide);
 document.addEventListener('keydown',ev=>{
-  if(ev.key==='Escape'){ closeSlide(); closeEntry(); closeFull(); closeSave(); fx.ov.hide($('#ovSet')); if(S.cap) closeCap(); return }
+  if(ev.key==='Escape'){ closeSlide(); closeEntry(); closeFull(); closeSave(); if(S.cap) closeCap(); return }
   // 這週：方向鍵也能翻（桌面用）
   if(S.view!=='week'||document.querySelector('.ov.show')||/INPUT|TEXTAREA/.test((ev.target||{}).tagName||'')) return;
   const k={ArrowLeft:()=>goDay(S.dayIdx-1),ArrowRight:()=>goDay(S.dayIdx+1),ArrowUp:()=>goWeek(-1),ArrowDown:()=>goWeek(1)}[ev.key];
@@ -1214,14 +1215,14 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v10';
+const APP_VER='v11';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').then(r=>{ swReg=r }).catch(e=>console.error('sw',e)));
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&swReg) swReg.update().catch(()=>{}) });
 }
-load().then(async()=>{ SB.last=await kvGet('syncLast')||0; sbInit(); render({enter:true}); tickMoment() });
+load().then(async()=>{ SB.last=await kvGet('syncLast')||0; sbInit(); render({enter:true}); tickMoment(); maybeAutoRun() });
 </script>
 </body>
 </html>
