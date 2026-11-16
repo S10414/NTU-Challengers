@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Revela</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#E6C7B8">
+<meta name="theme-color" content="#EBC4B8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Revela">
@@ -15,12 +15,12 @@
 <style>
   @font-face{font-family:"Fraunces";font-style:normal;font-weight:600;font-display:swap;src:url(./vendor/fraunces-600.woff2) format("woff2")}
   :root{
-    /* 黃昏：上方霧桃粉 → 中間米白的霧 → 地平線 → 褪色的枯草 */
-    --sky:#E6C7B8; --haze:#F2E4D6; --horizon:#E2CFBD; --field:#D4BB9F;
-    --dusk:linear-gradient(180deg,var(--sky) 0%,var(--haze) 46%,var(--horizon) 60%,var(--field) 100%);
-    --card:#EAD8C8; --paper:#FAF3EA; --paper-2:#E8D9CB; --glass:rgba(250,243,234,.66);
+    /* 霧桃粉 → 米白 */
+    --sky:#EBC4B8; --haze:#F3D6CA; --horizon:#FAF1E6; --field:#FAF1E6;
+    --dusk:linear-gradient(180deg,var(--sky) 0%,var(--haze) 38%,var(--horizon) 100%);
+    --card:#F7E6DA; --paper:#FCF7EF; --paper-2:#F3DDD0; --glass:rgba(252,247,239,.7);
     --ink:#2B211C; --ink-2:#56443A; --ink-3:#6A584C; --dark:#2B221D;
-    --safe:#A84A33; --line:rgba(43,33,28,.16);
+    --safe:#D9917E; --line:rgba(43,33,28,.12);
     --word:"Fraunces","Noto Serif TC",Georgia,serif;
     --serif:"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif;
     --sans:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif;
@@ -870,8 +870,8 @@ function closeFull(instant){
 }
 
 /* ---------- 存下來：9:16（1080×1920）的一天／一週／一個月 ---------- */
-const EXC={bg:'#EAD8C8',paper:'#FAF3EA',paper2:'#E8D9CB',ink:'#2B211C',ink2:'#56443A',ink3:'#6A584C',safe:'#A84A33',dark:'#2B221D',
-  sky:'#E6C7B8',haze:'#F2E4D6',horizon:'#E2CFBD',field:'#D4BB9F'};
+const EXC={bg:'#F7E6DA',paper:'#FCF7EF',paper2:'#F3DDD0',ink:'#2B211C',ink2:'#56443A',ink3:'#6A584C',safe:'#D9917E',dark:'#2B221D',
+  sky:'#EBC4B8',haze:'#F3D6CA',horizon:'#FAF1E6',field:'#FAF1E6'};
 const EXWORD='"Fraunces","Noto Serif TC",Georgia,serif';
 const EXSERIF='"Noto Serif TC","Songti TC","Source Han Serif TC","PMingLiU",Georgia,serif';
 const EXSANS='-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",Helvetica,Arial,sans-serif';
@@ -900,7 +900,7 @@ function wrapText(g,txt,x,y,maxW,lh,maxLines){
 }
 function paperBg(g,W,H){
   const gr=g.createLinearGradient(0,0,0,H);
-  gr.addColorStop(0,EXC.sky); gr.addColorStop(.46,EXC.haze); gr.addColorStop(.6,EXC.horizon); gr.addColorStop(1,EXC.field);
+  gr.addColorStop(0,EXC.sky); gr.addColorStop(.38,EXC.haze); gr.addColorStop(1,EXC.horizon);
   g.fillStyle=gr; g.fillRect(0,0,W,H);
   // 車窗外流過的樹影：很淡、很糊的一條帶
   g.save(); g.filter='blur(28px)'; g.globalAlpha=.16; g.fillStyle='#8C786B';
@@ -1480,7 +1480,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v17';
+const APP_VER='v18';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
