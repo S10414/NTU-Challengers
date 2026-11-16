@@ -156,8 +156,19 @@
   .consent h3{font-size:15px;font-weight:600;margin:22px 0 6px}
   .consent p,.consent li{font-size:14px;line-height:1.8;color:var(--ink-2);margin:0 0 6px}
   .consent ul{padding-left:18px;margin:0 0 6px}
-  .opt{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);cursor:pointer}
-  .opt:last-of-type{border-bottom:1px solid var(--line)}
+  .opt{display:flex;gap:12px;align-items:flex-start;padding:14px 0 0;cursor:pointer}
+  .optw{border-top:1px solid var(--line);padding-bottom:12px}
+  .optw:last-of-type{border-bottom:1px solid var(--line)}
+  .more{margin:6px 0 0 34px}
+  .more summary{list-style:none;cursor:pointer;font-size:13px;color:var(--ink-3);display:inline-block;padding:4px 0}
+  .more summary::-webkit-details-marker{display:none}
+  .more summary::after{content:' ⌄';display:inline-block;transition:transform .2s}
+  .more[open] summary::after{transform:rotate(180deg)}
+  .more p{font-size:13px!important;line-height:1.75!important;margin:6px 0 4px!important}
+  .more ul{font-size:13px;line-height:1.75;color:var(--ink-2);padding-left:18px;margin:4px 0}
+  .more h4{font-size:13px;font-weight:600;margin:10px 0 2px;color:var(--ink-2)}
+  .more.foot{margin:16px 0 0}
+  .linkrow{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px}
   .opt input{width:22px;height:22px;flex:none;margin:2px 0 0;accent-color:var(--ink)}
   .opt b{display:block;font-size:15px;font-weight:600;margin-bottom:2px}
   .opt span{font-size:13px;line-height:1.6;color:var(--ink-2)}
@@ -217,11 +228,11 @@
   .ov.sheet2 .grp p,#view.v-settings .grp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
   .ov.sheet2 input[type=password],.ov.sheet2 input[type=text],.ov.sheet2 input[type=email],#view.v-settings input[type=password],#view.v-settings input[type=text],#view.v-settings input[type=email]{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;margin-bottom:10px}
 
-  .bk .st{font-size:13px;color:var(--ink-2);line-height:1.7;margin:0 0 10px}
+  #view.v-settings .st,.bk .st{font-size:13px;color:var(--ink-2);line-height:1.7;margin:0 0 10px}
   .bk .err{color:#8E3B27}
-  .bk .row2{display:flex;gap:8px;align-items:center}
-  .bk .row2 input{flex:1;margin-bottom:0!important}
-  .bk .row2 .btn{flex:none;padding:11px 14px}
+  #view.v-settings .row2,.bk .row2{display:flex;gap:8px;align-items:center}
+  #view.v-settings .row2 input,.bk .row2 input{flex:1;margin-bottom:0!important}
+  #view.v-settings .row2 .btn,.bk .row2 .btn{flex:none;padding:11px 14px}
   .onb h1{font-family:var(--word);font-size:56px;font-weight:600;letter-spacing:0;margin:60px 0 26px}
   .onb p{font-family:var(--serif);font-size:17px;line-height:1.9;margin:0 0 6px}
   .onb label{display:block;margin:38px 0 8px;font-size:13px;color:var(--ink-2)}
@@ -1017,50 +1028,51 @@ async function syncFeedback(){
   if(dirty) await kvSet('agentLog',S.agentLog);
 }
 function studyHTML(){
-  const c=consent()||{}, p=part();
-  let grp='';
-  if(p){
-    grp=!p.ai_from?'你是種子測試的參與者。這段期間只記錄，不會有顯影。':(partActive()?'你是種子測試的參與者，顯影已經開始。':`你是種子測試的參與者，顯影會在 ${aiFromStr(p.ai_from)}開始。`);
-  }
-  const pend=S.settings&&S.settings.pendingCode;
+  const c=consent()||{}, p=part(), pend=S.settings&&S.settings.pendingCode;
+  const grp=p?(!p.ai_from?'種子測試：這段期間只記錄。':(partActive()?'種子測試：顯影已開始。':`種子測試：顯影 ${aiFromStr(p.ai_from)}開始。`)):(pend?`邀請碼 ${esc(pend)} 連上網路後啟用。`:'');
   return `<h3>顯影與研究</h3>
-    <label class="opt"><input type="checkbox" data-consent="ai" ${c.ai?'checked':''}><div><b>顯影</b><span>會把紀錄的文字和最近 10 張縮圖送到 Anthropic 產生觀察。關掉後它就不再看。</span></div></label>
-    <label class="opt"><input type="checkbox" data-consent="research" ${c.research?'checked':''}><div><b>參與研究（選填）</b><span>讓團隊用代號分析顯影說過的話、你的回饋和記錄的頻率。不看照片和你寫的句子。</span></div></label>
-    <p style="margin-top:12px">${grp||(pend?`邀請碼 ${esc(pend)} 等連上網路後啟用。`:'顯影目前只開放給種子測試的參與者。有邀請碼的話填在這裡：')}</p>
-    ${p?'':`<div class="row2"><input type="text" class="codein" id="setCode" autocomplete="off" autocapitalize="characters" placeholder="邀請碼"><button class="btn" data-act="redeem">加入</button></div>`}
+    ${OPTS.filter(o=>o.k!=='backup').map(o=>optHTML(o,c[o.k],`data-consent="${o.k}"`,false)).join('')}
+    ${grp?`<p style="margin-top:12px">${grp}</p>`:''}
+    ${p?'':`<div class="row2" style="margin-top:12px"><input type="text" class="codein" id="setCode" autocomplete="off" autocapitalize="characters" placeholder="邀請碼"><button class="btn" data-act="redeem">加入</button></div>`}
     ${S.studyMsg?`<p class="st">${esc(S.studyMsg)}</p>`:''}
-    <p style="margin-top:10px"><button class="link" data-act="consentread">看完整說明</button></p>`;
+    <div class="linkrow"><button class="link" data-act="consentread">看完整說明</button></div>`;
 }
 function refreshStudy(){ const g=$('#studyGrp'); if(g) g.innerHTML=studyHTML() }
-function consentBody(){
-  return `<h3>你的紀錄存在哪裡</h3>
-    <p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>
-    <h3>顯影會看到什麼</h3>
-    <p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。</p>
-    <h3>研究用途（選填）</h3>
-    <p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
+const CS={
+  store:`<p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>`,
+  ai:`<p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。種子測試期間，要有邀請碼才會開始。</p>`,
+  research:`<p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
     <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li></ul>
-    <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。</p>
-    <h3>拍到別人的時候</h3>
-    <p>「身邊的人」可能會拍到別人。拍之前先問過對方，或避開正臉。這些照片也可能被送給顯影看。</p>
-    <h3>隨時可以改</h3>
-    <p>下面三個選項，之後都能在設定裡改。你也可以在設定裡刪除帳號：手機和雲端上的照片、紀錄、顯影的觀察，以及帳號本身都會刪掉。</p>`;
+    <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。不勾也能正常使用。</p>`,
+  people:`<p>「身邊的人」可能會拍到別人。拍之前先問過對方，或避開正臉。這些照片也可能被送給顯影看。</p>`,
+  change:`<p>這三個選項之後都能在設定裡改。你也可以在設定裡刪除帳號：手機和雲端上的照片、紀錄、顯影的觀察，以及帳號本身都會刪掉。</p>`,
+};
+const OPTS=[
+  {k:'backup',id:'cBackup',t:'雲端備份',s:'照片存一份到雲端，只有你的帳號讀得到。',sec:'store'},
+  {k:'ai',id:'cAi',t:'顯影',s:'文字和最近 10 張縮圖會送到 Anthropic 產生回應。',sec:'ai'},
+  {k:'research',id:'cResearch',t:'參與研究（選填）',s:'團隊用代號分析顯影說的話和你的回饋，不看照片。',sec:'research'},
+];
+function consentBody(){
+  return `<h3>你的紀錄存在哪裡</h3>${CS.store}<h3>顯影會看到什麼</h3>${CS.ai}<h3>研究用途（選填）</h3>${CS.research}
+    <h3>拍到別人的時候</h3>${CS.people}<h3>隨時可以改</h3>${CS.change}`;
+}
+/* 一個選項：勾選＋一句重點，下面「看詳細」收合完整說明（more=false 時不放收合） */
+function optHTML(o,checked,attr,more){
+  return `<div class="optw"><label class="opt"><input type="checkbox" ${attr} ${checked?'checked':''}><div><b>${o.t}</b><span>${o.s}</span></div></label>
+    ${more?`<details class="more"><summary>看詳細</summary>${CS[o.sec]}</details>`:''}</div>`;
 }
 function viewConsent(read){
   const c=consent()||{backup:true,ai:true,research:false};
   if(read) return `<div class="consent"><h2>Revela 怎麼處理你的資料</h2>${consentBody()}
     <div style="margin:28px 0 40px"><button class="btn fill wide" data-act="consentback">回到設定</button></div></div>`;
+  const on={backup:c.backup!==false,ai:c.ai!==false,research:!!c.research};
   return `<div class="consent"><h2>開始之前</h2>
-    <p class="sub">花一分鐘看一下 Revela 怎麼處理你的照片和文字。</p>
-    ${consentBody()}
-    <h3 style="margin-top:28px">你的選擇</h3>
-    <label class="opt"><input type="checkbox" id="cBackup" ${c.backup!==false?'checked':''}><div><b>雲端備份</b><span>換手機或清掉資料時拿得回來。</span></div></label>
-    <label class="opt"><input type="checkbox" id="cAi" ${c.ai!==false?'checked':''}><div><b>顯影</b><span>讓它看你的紀錄，看見反覆出現的事才開口。種子測試期間要有邀請碼才會開始。</span></div></label>
-    <label class="opt"><input type="checkbox" id="cResearch" ${c.research?'checked':''}><div><b>參與研究（選填）</b><span>讓團隊用代號分析上面說的資料。不勾也能正常使用。</span></div></label>
+    <p class="sub">選要開的功能，之後都能在設定裡改。</p>
+    ${OPTS.map(o=>optHTML(o,on[o.k],`id="${o.id}"`,true)).join('')}
     <h3>邀請碼（選填）</h3>
-    <input type="text" class="codein" id="cCode" autocomplete="off" autocapitalize="characters" placeholder="收到邀請碼的話填在這裡" value="${esc((S.settings&&S.settings.pendingCode)||'')}">
-    <div style="margin:26px 0 12px"><button class="btn fill wide" data-act="consentok">同意並開始</button></div>
-    <p class="small muted" style="margin-bottom:40px">三個都不勾也能用 Revela，紀錄只會存在這支手機。</p></div>`;
+    <input type="text" class="codein" id="cCode" autocomplete="off" autocapitalize="characters" placeholder="收到的話填在這裡" value="${esc((S.settings&&S.settings.pendingCode)||'')}">
+    <details class="more foot"><summary>拍到別人・隨時可以改</summary><h4>拍到別人的時候</h4>${CS.people}<h4>隨時可以改</h4>${CS.change}</details>
+    <div style="margin:26px 0 44px"><button class="btn fill wide" data-act="consentok">同意並開始</button></div></div>`;
 }
 
 /* ---------- 雲端備份（Supabase） ----------
@@ -1136,13 +1148,13 @@ async function sbVerify(){
 function bkHTML(){
   if(!SB.client) return `<h3>備份</h3><p class="st">雲端備份還沒設定好（supabase-config.js）。</p>`;
   const sw=on=>`<button class="link" data-act="${on?'bkon':'bkoff'}">${on?'重新開啟備份':'暫停備份'}</button>`;
-  if(!bkOn()) return `<h3>備份</h3><p class="st">雲端備份已暫停，新的照片只存在這支手機。</p>${sw(true)}`;
+  if(!bkOn()) return `<h3>備份</h3><p class="st">已暫停，紀錄只存在這支手機。</p>${sw(true)}`;
   const emailForm=(title,hint)=>{
     const b=S.bk, msg=b.msg?`<p class="st ${/不對|沒有|寄不出|頻繁/.test(b.msg)?'err':''}">${esc(b.msg)}</p>`:'';
     if(b.step==='code') return `<p class="st">驗證碼寄到 ${esc(b.email)} 了，輸入信裡的數字。</p>
       <div class="row2"><input type="text" id="bkCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="驗證碼"><button class="btn fill" data-act="sbverify">確認</button></div>
       ${msg}<p style="margin-top:10px"><button class="link" data-act="sbback">換一個 email／重寄</button></p>`;
-    return `<p class="st"><b>${title}</b><br>${hint}</p>
+    return `<p class="st"><b>${title}</b>${hint?`<br>${hint}`:''}</p>
       <div class="row2"><input type="email" id="bkEmail" autocomplete="email" placeholder="你的 email" value="${esc(b.email)}"><button class="btn fill" data-act="sbsend">寄驗證碼</button></div>${msg}`;
   };
   if(!SB.user){
@@ -1150,22 +1162,20 @@ function bkHTML(){
     if(SB.anonErr){
       const off=/anonymous|disabled|not enabled|signups/i.test(SB.anonErr);
       return `<h3>備份</h3><p class="st err">${off?'這個專案還沒開啟匿名登入，備份暫時用不了。':'備份還沒準備好：'+esc(SB.anonErr)}</p>
-        ${S.bk.step==='code'?emailForm():`<p class="st">也可以先用 email 登入備份。</p>`+emailForm('用 email 登入','信箱會收到驗證碼。')}
+        ${S.bk.step==='code'?emailForm():emailForm('改用 email 登入','')}
         <p style="margin-top:8px"><button class="link" data-act="sbretry">重試</button></p>`;
     }
     return `<h3>備份</h3><p class="st">${navigator.onLine?'備份準備中…':'現在沒有網路，連上之後會自動開始備份。'}</p>${sw(false)}`;
   }
   const total=S.entries.length, done=S.entries.filter(e=>e.sync==='done').length;
-  const st=SB.busy?'備份中…':SB.err?SB.err:(done===total?`全部 ${total} 則都備份好了。`:`${done}／${total} 則已備份，其餘有網路時會自動補上。`);
-  const status=`<p class="st ${SB.err?'err':''}">${esc(st)}${SB.last&&!SB.busy?`<br>上次同步：${rel(SB.last)}`:''}</p>
-    <div class="row2" style="margin-bottom:12px"><button class="btn" data-act="sbsync" ${SB.busy?'disabled':''}>立即同步</button></div>`;
-  if(isAnon()) return `<h3>備份</h3><p class="st">照片已經自動備份，不用登入。</p>${status}
-    <div style="margin:14px 0 4px;border-top:1px solid var(--line);padding-top:14px">${emailForm('換手機也要找得回來？','綁定一個 email（選填）。沒有綁定的話，清掉瀏覽器資料或換手機就拿不回雲端的照片。若這個 email 已經有帳號，會改成登入它並把這支手機的照片補進去。')}</div>
-    <p style="margin-top:12px">${sw(false)}　<button class="link" data-act="sbwipe">刪除雲端上的所有資料</button></p>`;
-  return `<h3>備份</h3><p class="st">已綁定 ${esc(SB.user.email||'')}，換手機登入同一個 email 就找得回來。</p>${status}
-    <button class="link" data-act="sbout">登出並暫停備份</button>　${sw(false)}　<button class="link" data-act="sbwipe">刪除雲端上的所有資料</button>`;
+  const st=SB.busy?'備份中…':SB.err?SB.err:(done===total?`已備份 ${total} 則`:`已備份 ${done}／${total} 則`)+(SB.last&&!SB.busy&&!SB.err?` · ${rel(SB.last)}同步`:'');
+  const status=`<p class="st ${SB.err?'err':''}">${isAnon()?'':`${esc(SB.user.email||'')} · `}${esc(st)}</p>`;
+  const links=`<div class="linkrow"><button class="link" data-act="sbsync" ${SB.busy?'disabled':''}>立即同步</button>${isAnon()?'':'<button class="link" data-act="sbout">登出</button>'}${sw(false)}<button class="link" data-act="sbwipe">刪除雲端資料</button></div>`;
+  if(isAnon()) return `<h3>備份</h3>${status}
+    <div style="margin:14px 0 4px">${emailForm('綁定 email（選填）','換手機時用來找回照片。')}</div>${links}`;
+  return `<h3>備份</h3>${status}${links}`;
 }
-function dataNote(){ return !bkOn()?'紀錄和照片目前只存在這支手機。移除 App 或清掉瀏覽器資料就會一起消失。':'紀錄和照片存在這支手機，也會自動備份到雲端；雲端只有你自己看得到。' }
+function dataNote(){ return '' }
 function refreshBk(){ const g=$('#bkGrp'); if(g) g.innerHTML=bkHTML(); const n=$('#dataNote'); if(n) n.textContent=dataNote() }
 let syncT=null;
 function syncSoon(ms){ clearTimeout(syncT); syncT=setTimeout(()=>syncAll(),ms==null?600:ms) }
@@ -1251,16 +1261,13 @@ function viewSettings(){
   const st=S.settings||{};
   return `<h2>設定</h2>
     <div class="grp"><h3>習慣主題</h3>
-      <input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"></div>
-    <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button><p id="setMsg" class="small muted" style="margin-top:8px"></p></div>
+      <div class="row2"><input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"><button class="btn" data-act="setsave">存起來</button></div>
+      <p id="setMsg" class="small muted"></p></div>
     <div class="grp bk" id="bkGrp">${bkHTML()}</div>
     <div class="grp" id="studyGrp">${studyHTML()}</div>
-    <div class="grp"><h3>資料</h3>
-      <p id="dataNote">${dataNote()}</p>
-      <button class="link" data-act="export">匯出成一個檔案</button><br><br>
-      <button class="link" data-act="reset">清掉這支手機上的紀錄</button><br><br>
-      <button class="link" data-act="delacct">刪除我的帳號</button></div>
-    <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>`;
+    <div class="grp"><h3>資料</h3><span id="dataNote" hidden></span>
+      <div class="linkrow"><button class="link" data-act="export">匯出</button><button class="link" data-act="reset">清掉手機上的紀錄</button><button class="link" data-act="delacct">刪除帳號</button></div></div>
+    <div class="grp"><p style="font-size:12px;opacity:.6">版本 ${APP_VER}</p></div>`;
 }
 
 /* ---------- 顯影：觀察者 ---------- */
@@ -1307,7 +1314,7 @@ document.addEventListener('click',async ev=>{
   const d=a.dataset;
   switch(d.act){
     case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date())}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
-    case 'nav': if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
+    case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
     case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
@@ -1397,7 +1404,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v14';
+const APP_VER='v15';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
