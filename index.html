@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Revela</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#DFCAD6">
+<meta name="theme-color" content="#E6C7B8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Revela">
@@ -15,10 +15,9 @@
 <style>
   @font-face{font-family:"Fraunces";font-style:normal;font-weight:600;font-display:swap;src:url(./vendor/fraunces-600.woff2) format("woff2")}
   :root{
-    /* 黃昏：上方淡紫粉 → 蜜桃 → 地平線的金 → 下面平靜的倒影 */
-    --sky:#DFCAD6; --haze:#F8D9C0; --horizon:#FDE6BD; --field:#ECCFBA;
-    --dusk:linear-gradient(180deg,var(--sky) 0%,var(--haze) 42%,var(--horizon) 64%,var(--field) 100%);
-    --sunset:linear-gradient(180deg,#EED0B8 0%,#FCE0AD 50%,#FFEDBD 76%,#F6DDB6 100%);
+    /* 黃昏：上方霧桃粉 → 中間米白的霧 → 地平線 → 褪色的枯草 */
+    --sky:#E6C7B8; --haze:#F2E4D6; --horizon:#E2CFBD; --field:#D4BB9F;
+    --dusk:linear-gradient(180deg,var(--sky) 0%,var(--haze) 46%,var(--horizon) 60%,var(--field) 100%);
     --card:#EAD8C8; --paper:#FAF3EA; --paper-2:#E8D9CB; --glass:rgba(250,243,234,.66);
     --ink:#2B211C; --ink-2:#56443A; --ink-3:#6A584C; --dark:#2B221D;
     --safe:#A84A33; --line:rgba(43,33,28,.16);
@@ -68,31 +67,6 @@
   .notice{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-left:2px solid var(--safe);padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.7;color:var(--ink-2)}
   .notice .btn{margin-top:10px;padding:9px 14px;font-size:14px}
 
-  /* 太陽就是「留下此刻」的按鈕。wait 掛在天上、now 發亮並呼吸、done 沉到地平線一半、past 低低的 */
-  .hero{position:relative;height:min(44vh,330px);min-height:250px;margin:0 -22px 20px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
-  .hero .skyclip{position:absolute;inset:0 0 46px 0;clip-path:inset(-400px -400px 0 -400px);display:flex;justify-content:center;align-items:flex-end;pointer-events:none}
-  .sun{all:unset;box-sizing:border-box;pointer-events:auto;cursor:pointer;width:124px;height:124px;border-radius:50%;position:relative;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
-    background:radial-gradient(circle at 50% 42%,#FFFCEE 0%,#FFE9B4 44%,#FFCB85 80%,#FBB173 100%);
-    box-shadow:0 0 40px 12px rgba(255,220,160,.55),0 0 120px 46px rgba(255,190,125,.30);
-    transform:translateY(-84px);transition:transform 2s cubic-bezier(.45,0,.2,1),box-shadow 2s ease,filter 2s ease}
-  .sun:focus-visible{outline:2px solid var(--ink);outline-offset:6px}
-  .sun:active{filter:brightness(1.04)}
-  .sun::after{content:'';position:absolute;inset:-20px;border-radius:50%;border:1px solid rgba(255,246,222,.9);opacity:0}
-  .s-now .sun{transform:translateY(-104px) scale(1.14);box-shadow:0 0 54px 20px rgba(255,226,170,.75),0 0 160px 70px rgba(255,196,130,.42)}
-  .s-now .sun::after{animation:halo 4.2s ease-in-out infinite}
-  .s-past .sun{transform:translateY(-22px);filter:saturate(.92)}
-  .s-done .sun{transform:translateY(62px);box-shadow:0 0 36px 10px rgba(255,200,150,.42),0 0 110px 44px rgba(250,170,140,.24);filter:saturate(.95)}
-  @keyframes halo{0%{transform:scale(.86);opacity:0}35%{opacity:.75}100%{transform:scale(1.42);opacity:0}}
-  .calm .s-now .sun::after{animation:none}
-  .calm .sun{transition:none}
-  @media (prefers-reduced-motion:reduce){.s-now .sun::after{animation:none}.sun{transition:none}}
-  .hero .hz{position:absolute;left:0;right:0;bottom:46px;height:1px;background:linear-gradient(90deg,transparent,rgba(43,33,28,.26) 18%,rgba(43,33,28,.26) 82%,transparent)}
-  .hero .cap{height:46px;line-height:46px;margin:0;font-family:var(--serif);font-size:15px;letter-spacing:.16em;color:var(--ink-2)}
-  .star{all:unset;position:absolute;top:8%;right:14%;width:48px;height:48px;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
-  .star i{width:9px;height:9px;border-radius:50%;background:#FFFDF4;box-shadow:0 0 10px 4px rgba(255,250,230,.95),0 0 30px 12px rgba(255,236,200,.6);position:relative;display:block}
-  .star i::before,.star i::after{content:'';position:absolute;left:50%;top:50%;background:linear-gradient(90deg,transparent,rgba(255,253,244,.95),transparent);transform:translate(-50%,-50%)}
-  .star i::before{width:38px;height:1px}.star i::after{width:1px;height:38px;background:linear-gradient(180deg,transparent,rgba(255,253,244,.95),transparent)}
-  .star:focus-visible{outline:2px solid var(--ink);outline-offset:-6px;border-radius:50%}
   .agent-foot{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--ink-3)}
   .moment{border-radius:3px;margin:8px 0 18px;text-align:left;width:100%;border:0}
   .moment.wait{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:16px}
@@ -209,7 +183,7 @@
   .ov{position:fixed;inset:0;z-index:50;overflow:auto;display:none}
   .ov.show{display:block}
   .ov .in{max-width:430px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:max(22px,env(safe-area-inset-top)) 22px max(22px,env(safe-area-inset-bottom))}
-  .ov.cap{background:var(--sunset);color:var(--ink)}
+  .ov.cap{background:var(--dusk);color:var(--ink)}
   .ov.cap .in{position:relative;z-index:1}
   .ov.cap .top{display:flex;justify-content:space-between;align-items:baseline}
   .ov.cap .top .link{color:var(--ink-2)}
@@ -230,6 +204,32 @@
   .ov.cap input.line::placeholder{color:rgba(43,33,28,.5)}
   .ov.cap .btn.paper{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .ov.cap .btn.paper:disabled{opacity:.45}
+  /* 內建相機（像 BeReal：直式 3:4 取景框、白色快門、左邊相簿、右邊翻轉） */
+  .ov.cap.camon{background:#0F0C0B;color:#FAF3EA}
+  .camui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;max-width:430px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 14px max(18px,env(safe-area-inset-bottom))}
+  .camui .bar{width:100%;display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 6px}
+  .camui .bar .cd{font-size:15px;color:#FAF3EA;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+  .camui .bar .ttl{font-family:var(--serif);font-size:16px;letter-spacing:.14em}
+  .camui .x{all:unset;cursor:pointer;width:36px;height:36px;display:grid;place-items:center;font-size:22px;line-height:1;color:#FAF3EA}
+  .vf{position:relative;width:100%;aspect-ratio:3/4;max-height:calc(100dvh - 200px);border-radius:22px;overflow:hidden;background:#1A1513;margin-top:6px}
+  .vf video{width:100%;height:100%;object-fit:cover;display:block}
+  .vf video.mirror{transform:scaleX(-1)}
+  .vf .msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;font-size:14px;line-height:1.7;color:rgba(250,243,234,.8)}
+  .vf .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .vf .flash.go{animation:shot .45s ease-out}
+  @keyframes shot{0%{opacity:.9}100%{opacity:0}}
+  .camctl{width:100%;flex:1;display:flex;align-items:center;justify-content:space-between;padding:0 18px;min-height:120px}
+  .camctl .side{all:unset;cursor:pointer;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:rgba(250,243,234,.12);color:#FAF3EA;font-size:12px;letter-spacing:.04em;position:relative;overflow:hidden}
+  .camctl .side input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .camctl .side svg{width:24px;height:24px}
+  .shutter{all:unset;cursor:pointer;width:80px;height:80px;border-radius:50%;border:5px solid #FAF3EA;box-sizing:border-box;display:grid;place-items:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  .shutter::after{content:'';width:62px;height:62px;border-radius:50%;background:#FAF3EA;transition:transform .12s}
+  .shutter:active::after{transform:scale(.88)}
+  .shutter:disabled{opacity:.4}
+  .ov.cap .prev{border-radius:16px;overflow:hidden;background:rgba(43,33,28,.08)}
+  .ov.cap .again{display:flex;gap:18px;margin:-4px 0 18px}
+  .ov.cap .again .link{color:var(--ink-2);position:relative}
+  .ov.cap .again input{position:absolute;inset:0;opacity:0;width:100%}
 
   .ov.dark{background:var(--ink);color:var(--paper)}
   .ov.dark .link{color:var(--paper);opacity:.8}
@@ -386,18 +386,12 @@ async function tickMoment(){
 }
 
 /* ---------- 畫面 ---------- */
-let dotView=null, lastBanner='', lastSun='';
+let dotView=null, lastBanner='';
 const sunState=()=>{ const b=bannerSig(); return b==='done'?'done':b==='now'?'now':b==='past'?'past':'wait' };
-/* 告訴背景現在的天空：今天頁跟著太陽按鈕；這週頁的光跟著星期幾橫移；其他頁是安靜的低光 */
-function skySync(){
-  if(!fx.sky) return;
-  if(!S.settings||!consent()||S.consentRead||S.view==='settings'){ fx.sky({el:null,sun:[.5,.36],glow:.4,set:.35}); return }
-  if(S.view==='week'){ fx.sky({sun:[.14+.72*((S.dayIdx==null?todayIdx():S.dayIdx)/6),.6],glow:.75,set:0}); return }
-  const st=sunState(), el=$('#view .sun');
-  fx.sky({el,glow:st==='now'?1.3:st==='done'?.6:st==='past'?.7:.95,set:st==='done'?1:st==='past'?.55:0});
-}
+function skySync(){}   // 背景不再有太陽，保留呼叫點
 function bannerSig(){ const m=S.moment||{}; return momentDone()?'done':(m.at&&Date.now()>=m.at?'now':(m.at?'wait':'past')) }
 /* o.enter：換頁/第一次進場才播進場動畫；其他重繪（按回饋、更新時間）一律靜默，避免一直重播 */
+
 function render(o){
   o=o||{};
   $('#hdate').textContent=fmtDate(new Date());
@@ -411,14 +405,10 @@ function render(o){
   if(!['today','week','settings'].includes(S.view)) S.view='today';
   $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewSettings();
   if(S.view==='week') mountBooth();
-  if(o.enter) fx.enter(S.view==='today'?$('#view .below'):$('#view'));
+  if(o.enter) fx.enter($('#view'));
   fx.pulse(S.busy&&S.view==='today'?$('#view .status'):null);
   if(S.view==='today'){
     const f=$('#view [data-fresh] .txt'); if(f){ S.freshId=null; fx.develop(f); f.closest('.print').scrollIntoView({block:'center',behavior:'smooth'}) }
-    // 太陽換狀態（例如剛留下今天的時刻）：先擺回舊位置，下一格再換，讓它慢慢落下
-    const h=$('#view .hero'), st=sunState();
-    if(h&&lastSun&&lastSun!==st&&!o.enter){ h.className='hero s-'+lastSun; void h.offsetWidth; requestAnimationFrame(()=>{ h.className='hero s-'+st }) }
-    lastSun=st;
   }
   skySync();
   lastBanner=bannerSig();
@@ -451,22 +441,17 @@ function notices(){
 }
 function viewToday(){
   const today=dkey(new Date()), st=sunState();
-  const cap={wait:'留下此刻',now:'現在',done:'今天留下了',past:'留下此刻'}[st];
   const list=S.entries.filter(e=>e.date===today).slice().reverse();
-  const star=aiOn()&&S.agentLog.some(m=>m.unread)?`<button class="star" data-act="star" aria-label="顯影有話想說"><i></i></button>`:'';
-  return `${notices()}
-    <div class="hero s-${st}">
-      ${star}
-      <div class="skyclip"><button class="sun" data-act="cap" ${st==='now'?'data-theme="daily" data-moment="1"':''} aria-label="留下此刻"></button></div>
-      <div class="hz"></div><p class="cap">${cap}</p>
-    </div>
-    <div class="below">${list.map(entryRow).join('')}${agentSec()}</div>`;
+  const top=st==='now'
+    ?`<button class="moment now" data-act="cap" data-theme="daily" data-moment="1"><p class="t">現在</p><div class="s">留下此刻</div></button>`
+    :`<div class="row" style="margin:8px 0 22px"><button class="btn fill wide" data-act="cap">留下此刻</button></div>${st==='done'?'<p class="small muted" style="margin:-12px 0 18px">今天的時刻，留下了。</p>':''}`;
+  return `${notices()}${top}${list.map(entryRow).join('')}${agentSec()}`;
 }
 function entryRow(e){
   return `<div class="paper entry"><button data-act="open" data-id="${e.id}">
     <div class="th">${e.img?`<img src="${e.img}" alt="">`:''}</div>
     <div><p class="line">${e.line?esc(e.line):'<span class="muted">（沒有寫字）</span>'}</p>
-    <div class="meta">${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 餘暉':''}</div></div>
+    <div class="meta">${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 晚了一點':''}</div></div>
   </button></div>`;
 }
 function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd+off*7); return d }
@@ -607,7 +592,7 @@ function agentSec(){
   if(!p||!p.ai_from) return '';
   if(!partActive()) return `<section class="agent-sec"><p class="agent-foot">顯影 ${aiFromStr(p.ai_from)}開始</p></section>`;
   const can=agentCan(), ready=agentReady();
-  const prints=S.agentLog.filter(m=>!m.unread).slice().reverse().map(m=>`<div class="print"${m.id===S.freshId?' data-fresh':''}>
+  const prints=S.agentLog.slice().reverse().map(m=>`<div class="print"${m.id===S.freshId?' data-fresh':''}>
     <p class="txt">${esc(m.text)}</p>
     <div class="when">${new Date(m.ts).getMonth()+1}月${new Date(m.ts).getDate()}日</div>
     <div class="fb">${m.reaction?`<span class="chosen">你說：${RX[m.reaction]||''}</span>`:
@@ -620,44 +605,98 @@ function agentSec(){
 }
 
 /* ---------- 拍下 ---------- */
-let capTimer=null, capSafe=null;
+let capTimer=null;
 /* date：補某一天的照片（從拍貼格子進來）。補照片沒有倒數、不算時刻 */
 function openCap(theme,moment,pt,date){
-  if(capSafe){ capSafe.destroy(); capSafe=null }
-  S.cap={theme:theme||null,moment:!!moment&&!date,start:Date.now(),img:null,line:'',date:date||null,fromLib:false,shotAt:null};
-  const ovc=$('#ovCap');
-  fx.ov.show(ovc,pt?{from:pt}:{});
-  capSafe=(fx.sunset||fx.safelight).mount(ovc);
+  S.cap={theme:theme||null,moment:!!moment&&!date,start:Date.now(),img:null,line:'',date:date||null,fromLib:false,shotAt:null,
+    step:(!date&&CAM.ok())?'cam':'form',facing:'environment',camErr:''};
+  fx.ov.show($('#ovCap'),pt?{from:pt}:{});
   renderCap();
   clearInterval(capTimer); if(!S.cap.date) capTimer=setInterval(()=>{const el=$('#cd');if(el)el.replaceWith(cdEl())},250);
 }
-function closeCap(){ clearInterval(capTimer); S.cap=null; fx.ov.hide($('#ovCap'),()=>{ if(capSafe){ capSafe.destroy(); capSafe=null } }) }
+function closeCap(){ clearInterval(capTimer); CAM.stop(); S.cap=null; $('#ovCap').classList.remove('camon'); fx.ov.hide($('#ovCap')) }
+/* ---------- 內建相機 ----------
+   getUserMedia 直接開鏡頭，取景框是 3:4；拍下時照取景框裁切，存原始方向（前鏡頭預覽是鏡像，照片不是）。
+   不支援或沒有允許時，退回系統相機／相簿。 */
+const CAM={
+  stream:null, starting:false,
+  ok(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&isSecureContext },
+  async start(){
+    const c=S.cap; if(!c||c.step!=='cam'||CAM.starting) return;
+    CAM.stop(); CAM.starting=true; c.camErr='';
+    try{
+      const st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:c.facing},width:{ideal:4032},height:{ideal:3024}}});
+      if(!S.cap||S.cap.step!=='cam'){ st.getTracks().forEach(t=>t.stop()); return }
+      CAM.stream=st; const v=$('#vf video'); if(v){ v.srcObject=st; v.classList.toggle('mirror',c.facing==='user'); try{ await v.play() }catch{} }
+      const sb=$('#shutter'); if(sb) sb.disabled=false;
+      const m=$('#vf .msg'); if(m) m.remove();
+    }catch(err){
+      console.error('camera',err);
+      if(S.cap){ S.cap.camErr=/NotAllowed|Permission|Security/i.test(err.name||'')?'沒有相機權限。可以到手機設定允許，或用相簿、系統相機。':'打不開相機。可以用相簿或系統相機。'; S.cap.step='form'; renderCap() }
+    }finally{ CAM.starting=false }
+  },
+  stop(){ if(CAM.stream){ CAM.stream.getTracks().forEach(t=>t.stop()); CAM.stream=null } const v=$('#vf video'); if(v) v.srcObject=null },
+  async shoot(){
+    const v=$('#vf video'), c=S.cap; if(!v||!c||!v.videoWidth) return;
+    const vw=v.videoWidth, vh=v.videoHeight, R=3/4;
+    let sw=vw, sh=vh; if(vw/vh>R) sw=Math.round(vh*R); else sh=Math.round(vw/R);
+    const cv=document.createElement('canvas'); cv.width=sw; cv.height=sh;
+    cv.getContext('2d').drawImage(v,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,sw,sh);
+    const f=$('#vf .flash'); if(f){ f.classList.remove('go'); void f.offsetWidth; f.classList.add('go') }
+    try{ navigator.vibrate&&navigator.vibrate(12) }catch{}
+    v.pause();
+    const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',.95));
+    CAM.stop();
+    if(!blob||!S.cap) return;
+    const r=await processPhoto(new File([blob],'revela.jpg',{type:'image/jpeg'}));
+    if(!S.cap) return;
+    Object.assign(S.cap,{img:r?r.img:null,full:r?r.full:null,fromLib:false,shotAt:null,step:'form'});
+    renderCap();
+  },
+  flip(){ const c=S.cap; if(!c) return; c.facing=c.facing==='user'?'environment':'user'; const sb=$('#shutter'); if(sb) sb.disabled=true; CAM.start() }
+};
+const ICON={
+  album:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>',
+  flip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9a8 8 0 0 1 14-3.5L20 8"/><path d="M20 4v4h-4"/><path d="M20 15a8 8 0 0 1-14 3.5L4 16"/><path d="M4 20v-4h4"/></svg>'
+};
 function cdEl(){
   const d=document.createElement('span'); d.id='cd'; d.className='cd';
-  if(S.cap&&S.cap.date){ if(capSafe) capSafe.setLeft(.5); d.textContent='補一張'; return d }
+  if(!S.cap||S.cap.date){ d.textContent=S.cap&&S.cap.date?'補一張':''; return d }
   const left=Math.max(0,120000-(Date.now()-S.cap.start));
-  if(capSafe) capSafe.setLeft(left/120000);
-  d.textContent=left===0?'餘暉':`${Math.floor(left/60000)}:${pad(Math.floor(left/1000)%60)}`;
-  const msg=$('#latemsg'); if(msg) msg.textContent=left===0?'太陽下去了，還是可以留下。':'';
+  d.textContent=left===0?'晚了一點':`${Math.floor(left/60000)}:${pad(Math.floor(left/1000)%60)}`;
+  const msg=$('#latemsg'); if(msg&&!S.cap.camErr) msg.textContent=left===0?'還是可以留下。':'';
   return d;
 }
 function renderCap(){
-  const c=S.cap;
+  const c=S.cap, ov=$('#ovCap');
+  if(c.step==='cam'){
+    ov.classList.add('camon');
+    $('#capBody').innerHTML=`<div class="camui">
+      <div class="bar"><span id="cd" class="cd"></span><span class="ttl">留下此刻</span><button class="x" data-act="capclose" aria-label="關閉">✕</button></div>
+      <div class="vf" id="vf"><video playsinline muted autoplay></video><div class="msg">打開相機中…</div><div class="flash"></div></div>
+      <div class="camctl">
+        <label class="side" aria-label="從相簿選">${ICON.album}<input type="file" accept="image/*" data-file="lib"></label>
+        <button class="shutter" id="shutter" data-act="shoot" aria-label="拍照" disabled></button>
+        <button class="side" data-act="flip" aria-label="翻轉鏡頭">${ICON.flip}</button>
+      </div></div>`;
+    const el=$('#cd'); if(el) el.replaceWith(cdEl());
+    CAM.start(); return;
+  }
+  ov.classList.remove('camon');
   const chips=THEMES().map(t=>`<button class="chip ${c.theme===t.k?'on':''}" data-act="theme" data-k="${t.k}">${esc(t.n)}</button>`).join('');
+  const camBtn=CAM.ok()?`<button class="camlab" data-act="camopen" style="width:100%">打開相機</button>`
+    :`<label class="camlab">打開相機<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`;
   $('#capBody').innerHTML=`
-    <div class="top"><span id="cd" class="cd">${c.date?'補一張':''}</span><button class="link" data-act="capclose">先不要</button></div>
-    ${c.date?`<p class="now">${(d=>`${d.getMonth()+1} 月 ${d.getDate()} 日`)(parseD(c.date))}</p><div class="latemsg"></div>`:
-    `<p class="now">留下此刻</p><div class="latemsg" id="latemsg"></div>`}
+    <div class="top"><span id="cd" class="cd"></span><button class="link" data-act="capclose">先不要</button></div>
+    <p class="now">${c.date?(d=>`${d.getMonth()+1} 月 ${d.getDate()} 日`)(parseD(c.date)):'留下此刻'}</p><div class="latemsg" id="latemsg">${c.camErr?esc(c.camErr):''}</div>
+    ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>
+      <div class="again">${CAM.ok()?'<button class="link" data-act="camopen">重拍</button>':`<label class="link">重拍<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`}<label class="link">從相簿換一張<input type="file" accept="image/*" data-file="lib"></label></div>`
+    :`<div class="camrow">${camBtn}<label class="camlab">從相簿選<input type="file" accept="image/*" data-file="lib"></label></div>`}
     <div class="chips">${chips}</div>
     ${c.theme==='people'?'<p class="capnote">拍到別人之前先問過對方，或避開正臉。</p>':''}
-    ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>`:''}
-    <div class="camrow">
-      <label class="camlab">${c.img&&!c.fromLib?'重拍':'打開相機'}<input type="file" accept="image/*" capture="environment" data-file="cam"></label>
-      <label class="camlab">${c.img&&c.fromLib?'換一張':'從相簿選'}<input type="file" accept="image/*" data-file="lib"></label>
-    </div>
     <input class="line" placeholder="一句話就好。可以不寫。" maxlength="40" value="${esc(c.line)}" data-line="1">
     <button class="btn paper wide" data-act="capsave" ${c.theme?'':'disabled'}>留下</button>
-    ${c.theme?'':'<div class="small" style="opacity:.85;margin-top:10px">先選一個主題。</div>'}
+    ${c.theme?'':'<div class="small" style="color:var(--ink-2);margin-top:10px">選一個主題。</div>'}
   `;
   const el=$('#cd'); if(el) el.replaceWith(cdEl());
 }
@@ -746,7 +785,7 @@ async function openEntry(id,pt){
     <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--serif);letter-spacing:.08em">${esc(themeName(e.theme))}</span><button class="link" data-act="eclose">關掉</button></div>
     <div class="big" id="entryBig"></div>
     <p class="line">${e.line?esc(e.line):'<span style="opacity:.6">（沒有寫字）</span>'}</p>
-    <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 餘暉':''}</div>
+    <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 晚了一點':''}</div>
     ${sibs.length>1?`<div class="sibs"><span>這一格有 ${sibs.length} 張</span>${sibs.map(x=>`<button class="${x.id===e.id?'on':''}" data-act="open" data-id="${x.id}" aria-label="${fmtTime(x.ts)}">${x.img?`<img src="${x.img}" alt="">`:''}</button>`).join('')}</div>`:''}
     <div><button class="link" data-act="edel" data-id="${e.id}">刪掉這一則</button></div>
   </div>`;
@@ -794,7 +833,7 @@ function fullHTML(e){
     <div class="fbar"><span class="t">${esc(themeName(e.theme))}</span><button class="link" data-act="fullclose">關掉</button></div>
     <div class="info">
       ${e.img&&e.line?`<p class="line">${esc(e.line)}</p>`:''}
-      <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 餘暉':''}</div>
+      <div class="meta">${fmtDate(d)} ${fmtTime(e.ts)}${e.moment?' · 那天的時刻':''}${e.late?' · 晚了一點':''}</div>
       ${sibs.length>1?`<div class="sibs"><span>這一格有 ${sibs.length} 張</span>${sibs.map(x=>`<button class="${x.id===e.id?'on':''}" data-act="fullsib" data-id="${x.id}" aria-label="${fmtTime(x.ts)}">${x.img?`<img src="${x.img}" alt="">`:''}</button>`).join('')}</div>`:''}
       <button class="link" data-act="fulldel" data-id="${e.id}">刪掉這一則</button>
     </div>`;
@@ -1322,7 +1361,7 @@ async function runAgent(){
     if(out.skipped){ S.agentMeta=Object.assign({},S.agentMeta,{lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:false}); await kvSet('agentMeta',S.agentMeta); S.busy=false; render(); return }
     if(!res.ok||out.error) throw new Error(out.error||('http '+res.status));
     S.agentMeta={lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:!!(out.speak&&out.text)};
-    if(out.speak&&out.text){ S.agentLog.push({id:String(Date.now()),ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:'',obsId:out.obs_id||null,unread:true}); await kvSet('agentLog',S.agentLog) }
+    if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:'',obsId:out.obs_id||null}); await kvSet('agentLog',S.agentLog) }
     await kvSet('agentMeta',S.agentMeta);
   }catch(e){ console.error(e); S.err='它這次沒看清楚。等一下再讓它看一次。' }
   S.busy=false; render();
@@ -1350,8 +1389,11 @@ document.addEventListener('click',async ev=>{
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
     case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
-    case 'theme': S.cap.theme=d.k; S.cap.line=$('[data-line]').value; renderCap(); break;
+    case 'theme': S.cap.theme=d.k; S.cap.line=($('[data-line]')||{}).value||''; renderCap(); break;
     case 'capclose': closeCap(); break;
+    case 'shoot': await CAM.shoot(); break;
+    case 'flip': CAM.flip(); break;
+    case 'camopen': if(S.cap){ S.cap.line=($('[data-line]')||{}).value||S.cap.line; S.cap.step='cam'; S.cap.camErr=''; renderCap() } break;
     case 'capsave': S.cap.line=$('[data-line]').value; await saveCap(); break;
     case 'open':{ const r=a.getBoundingClientRect(); openEntry(d.id,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
     case 'wday': goDay(Number(d.i)); break;
@@ -1367,7 +1409,6 @@ document.addEventListener('click',async ev=>{
     case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); await delPhoto(d.id); forgetURL(d.id); queueDel(d.id); closeEntry(); render(); break }
     case 'play': playWeek(); break;
     case 'check': runAgent(); break;
-    case 'star':{ const m=S.agentLog.find(x=>x.unread); if(m){ m.unread=false; S.freshId=m.id; await kvSet('agentLog',S.agentLog); render() } break }
     case 'calm':{ await saveSettings({calm:!(S.settings&&S.settings.calm)}); fx.calm(!!S.settings.calm); render(); break }
     case 'tilt':{ const on=!(S.settings&&S.settings.tilt); const ok=on?await fx.tilt(true):(await fx.tilt(false),false); await saveSettings({tilt:on&&ok}); if(on&&!ok) alert('這支手機沒有允許，或不支援傾斜感應。'); render(); break }
     case 'addpast':{ const r=a.getBoundingClientRect(); openCap(d.theme,false,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)},d.date); break }
@@ -1412,7 +1453,7 @@ document.addEventListener('click',async ev=>{
 });
 document.addEventListener('change',async ev=>{
   if(ev.target.matches('[data-consent]')){ const k=ev.target.dataset.consent; await consentSet({[k]:ev.target.checked}); if(ev.target.checked) sbEnsure(); refreshStudy(); return }
-  if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=$('[data-line]').value;
+  if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=($('[data-line]')||{}).value||S.cap.line; CAM.stop(); S.cap.step='form';
     S.cap.fromLib=ev.target.dataset.file==='lib'; S.cap.shotAt=S.cap.fromLib?await exifTime(f):null;
     const r=await processPhoto(f); S.cap.img=r?r.img:null; S.cap.full=r?r.full:null; renderCap() }
 });
@@ -1439,7 +1480,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v16';
+const APP_VER='v17';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });

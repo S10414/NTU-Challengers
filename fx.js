@@ -1,7 +1,7 @@
 /* fx.js — Revela 的視覺層
    Lenis  → 平滑捲動，並提供捲動速度給背景
    GSAP   → 全部動態與時間軸（也是唯一的 ticker）
-   WebGL  → 視覺核心：① 照片從夕陽光裡浮現 ② 拍攝時的兩分鐘日落 ③ 常駐的黃昏天空（會回應手指、滑動、傾斜）
+   WebGL  → 視覺核心：① 照片從暖光裡浮現 ② （保留未用）日落 ③ 常駐的黃昏背景（會回應手指、滑動、傾斜）
    沒有顆粒、沒有閃動：所有變化都是慢的、連續的。
 
    這個檔案是可選的：index.html 只透過 window.FX 呼叫它。
@@ -78,39 +78,30 @@
     '}'
   ].join('\n');
 
-  /* ③ 黃昏的天空。上方淡紫粉、中間蜜桃、地平線一帶金色，下面是平靜的倒影。
-        uSun/uGlow：太陽的位置與亮度（今天頁跟著那顆太陽按鈕走；這週頁跟著星期幾橫移）
-        uSet：0 太陽還在，1 已經落下（餘暉，偏紫粉）
-        uTouch：手指碰到的地方光會暖一點、雲會散開；uTilt：傾斜手機的景深位移
-        uFlow/uHz：左右滑時雲橫移、上下換週時地平線跟著動 */
+  /* ③ 黃昏背景（原本的配色）：上方霧桃粉、中間米白的霧、下方褪色的枯草，地平線一條很淡的樹影。
+        不放顆粒、不閃動。uTouch：手指碰到的地方光暖一點；uFlow：滑動時景物往旁邊流過。 */
   var AMB_FRAG = PRE + NOISE + [
-    'uniform vec2 uRes;uniform float uT;uniform float uWash;uniform float uFlow;uniform float uSet;uniform float uGlow;uniform float uTouchA;uniform float uHz;',
-    'uniform vec2 uSun;uniform vec2 uTouch;uniform vec2 uTilt;',
+    'uniform vec2 uRes;uniform float uT;uniform float uVel;uniform float uWash;uniform float uFlow;uniform float uTouchA;uniform float uHz;',
+    'uniform vec2 uTouch;uniform vec2 uTilt;',
     'void main(){',
-    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float y=uv.y+uHz; float hz=.36;',
-    '  vec3 top=mix(vec3(.875,.790,.840),vec3(.805,.756,.865),uSet);',
-    '  vec3 mid=mix(vec3(.972,.850,.752),vec3(.950,.805,.795),uSet);',
-    '  vec3 hor=mix(vec3(.992,.900,.740),vec3(.985,.815,.705),uSet);',
-    '  vec3 low=mix(vec3(.925,.810,.730),vec3(.885,.780,.765),uSet);',
-    '  vec3 col=mix(hor,mid,smoothstep(hz,hz+.26,y));',
-    '  col=mix(col,top,smoothstep(hz+.20,1.,y));',
-    '  float below=1.-smoothstep(hz-.02,hz+.01,y);',
-    '  col=mix(col,mix(low,hor,smoothstep(0.,hz,y)*.6),below);',
+    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float y=uv.y+uHz;',
+    '  vec3 sky=vec3(.902,.780,.722), haze=vec3(.949,.894,.839), hor=vec3(.886,.812,.741), fld=vec3(.831,.733,.624);',
+    '  vec3 col=mix(fld,hor,smoothstep(0.,.40,y));',
+    '  col=mix(col,haze,smoothstep(.40,.54,y));',
+    '  col=mix(col,sky,smoothstep(.54,1.,y));',
+    '  float fl=uT*.006+uFlow+uTilt.x*.05;',
+    '  float st=fbm(vec2(uv.x*asp*.32+fl,y*16.));',
+    '  float ground=1.-smoothstep(.30,.46,y);',
+    '  col*=1.+(st-.5)*(.025+.05*ground);',
+    '  float tb=fbm(vec2(uv.x*asp*1.1+fl*1.7,2.3));',
+    '  float top=.43+tb*.085+uTilt.y*.01;',
+    '  float tree=smoothstep(top,top-.07,y)*smoothstep(.33,.41,y);',
+    '  col=mix(col,vec3(.55,.47,.42),tree*.16);',
+    '  col*=1.+sin(y*40.+fl*30.)*uVel*.006;',
     '  vec2 td=(uv-uTouch)*vec2(asp,1.);',
-    '  float tg=exp(-dot(td,td)*12.)*uTouchA;',
-    '  float fl=uT*.004+uFlow;',
-    '  float c=smoothstep(.52,.80,fbm(vec2(uv.x*asp*.9+fl+uTilt.x*.07,y*4.2+uTilt.y*.05)))*smoothstep(hz+.06,hz+.30,y);',
-    '  c*=1.-.75*tg;',
-    '  col=mix(col,mix(vec3(1.,.93,.86),vec3(.935,.815,.850),uSet),c*.17);',
-    '  vec2 sp=uSun+uTilt*.018;',
-    '  vec2 d=(uv-sp)*vec2(asp,1.); float dd=dot(d,d);',
-    '  col+=vec3(.105,.068,.020)*exp(-dd*7.)*uGlow;',
-    '  col+=vec3(.036,.020,.0)*exp(-dd*1.4)*uGlow;',
-    '  float rx=exp(-pow((uv.x-sp.x)*asp*3.2,2.))*below*uGlow;',
-    '  col+=vec3(.045,.028,.004)*rx*(.7+.3*sin(y*70.));',
-    '  col+=vec3(.085,.050,.012)*tg;',
+    '  col+=vec3(.060,.036,.012)*exp(-dot(td,td)*10.)*uTouchA;',
     '  float band=exp(-pow((y-uWash)*5.,2.))*step(.001,uWash)*step(uWash,.999);',
-    '  col+=vec3(.030,.020,.006)*band;',
+    '  col+=band*.025;',
     DITHER,
     '  gl_FragColor=vec4(min(col,1.),1.);',
     '}'
@@ -206,8 +197,7 @@
   function drawAmbient(now) {
     var q = A.q, t = reduced() ? 0 : (now - T0) / 1000;
     q.set('uRes', [q.w, q.h]); q.set('uT', t);
-    q.set('uWash', A.wash); q.set('uFlow', A.flow); q.set('uHz', A.hz);
-    q.set('uSun', A.sun); q.set('uGlow', A.glow); q.set('uSet', A.set);
+    q.set('uWash', A.wash); q.set('uFlow', A.flow); q.set('uHz', A.hz); q.set('uVel', A.vel);
     q.set('uTouch', A.touch); q.set('uTouchA', A.touchA); q.set('uTilt', A.tilt);
     if (q.draw()) $('#bg').classList.add('on');
   }
