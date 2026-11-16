@@ -95,3 +95,13 @@ where (select c.research from public.consents c where c.user_id = e.user_id orde
 revoke all on all tables in schema research from public, anon, authenticated;
 
 insert into public.invites(code,label,ai_offset_days,max_uses) values ('REVELA-TEAM','team',0,5) on conflict do nothing;
+
+-- v14：事後補上的紀錄（從相簿選、或補過去某一天）
+alter table public.entries add column if not exists backfill boolean not null default false;
+create or replace view research.entry_activity as
+select substr(md5('revela-salt-115-1:' || e.user_id::text), 1, 10) as pid,
+       e.date, to_timestamp(e.ts/1000.0) as captured_at, e.theme, e.moment, e.late, e.has_photo,
+       length(coalesce(e.line,'')) as line_len, e.backfill
+from public.entries e
+where (select c.research from public.consents c where c.user_id = e.user_id order by c.created_at desc limit 1);
+revoke all on all tables in schema research from public, anon, authenticated;
