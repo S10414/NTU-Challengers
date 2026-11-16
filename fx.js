@@ -1,7 +1,8 @@
 /* fx.js — Revela 的視覺層
    Lenis  → 平滑捲動，並提供捲動速度給背景
    GSAP   → 全部動態與時間軸（也是唯一的 ticker）
-   WebGL  → 視覺核心：① 照片「顯影」 ② 拍攝時的暗房安全燈 ③ 常駐的底片質感背景
+   WebGL  → 視覺核心：① 照片從夕陽光裡浮現 ② 拍攝時的兩分鐘日落 ③ 常駐的黃昏天空（會回應手指、滑動、傾斜）
+   沒有顆粒、沒有閃動：所有變化都是慢的、連續的。
 
    這個檔案是可選的：index.html 只透過 window.FX 呼叫它。
    載入失敗、沒有 WebGL、或使用者開了「減少動態」，App 都會降級到可用的樣子。
@@ -12,7 +13,8 @@
   var hasGSAP = typeof window.gsap !== 'undefined';
   var noGL = /[?&]nogl=1/.test(location.search);
   var reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var reduced = function () { return reduceMQ.matches; };
+  var calm = false;                                  // 設定裡的「簡化動畫」
+  var reduced = function () { return calm || reduceMQ.matches; };
   var $ = function (s) { return document.querySelector(s); };
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
 
@@ -26,74 +28,91 @@
     'float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*vnoise(p);p=p*2.03+vec2(17.1,9.2);a*=.5;}return v;}'
   ].join('\n');
 
-  /* ① 底片顯影。亮部先浮現、暗部最後；先是單色乳劑，再慢慢帶出顏色。
-        uProg = 1 時輸出就是原圖，一個像素都不多（顆粒在結尾歸零）。 */
+  var DITHER = '  col+=(hash(floor(uv*uRes))-.5)*.006;';   // 靜態的極淡抖色，只為了讓漸層不出現色階，不會動
+
+  /* ① 照片：一道夕陽光斜斜掃過，照片從暖光裡浮出來。uProg = 1 時輸出就是原圖。 */
   var PHOTO_FRAG = PRE + NOISE + [
     'uniform sampler2D uTex;uniform float uProg;uniform float uSeed;uniform vec3 uBase;uniform vec2 uRes;uniform float uFrame;',
     'void main(){',
-    '  vec2 uv=vUv; float asp=uRes.x/uRes.y;',
-    '  float n=fbm(uv*vec2(asp,1.)*3.+uSeed);',
-    '  float wob=1.-uProg;',
-    '  vec2 d=(vec2(vnoise(uv*6.+uSeed),vnoise(uv*6.+uSeed+9.1))-.5)*.03*wob;',
-    '  vec3 img=texture2D(uTex,uv+d).rgb;',
-    '  float lum=dot(img,vec3(.299,.587,.114));',
-    '  float delay=(1.-lum)*.45+n*.35;',
-    '  float a=smoothstep(delay,delay+.25,uProg*1.05);',
-    '  float sat=smoothstep(.5,1.,uProg);',
-    '  vec3 emul=vec3(lum,lum*.97,lum*.9);',
-    '  vec3 tone=mix(emul,img,sat);',
-    '  tone=mix(vec3(.5)+(tone-.5)*.6,tone,smoothstep(.2,.9,uProg));',
-    '  vec3 col=mix(uBase,tone,a);',
-    '  float g=hash(floor(uv*uRes)+uFrame*vec2(7.,13.))-.5;',
-    '  col+=g*.07*(1.-smoothstep(.85,1.,uProg))*smoothstep(0.,.15,uProg);',
-    '  gl_FragColor=vec4(col,1.);',
+    '  vec2 uv=vUv;',
+    '  vec3 img=texture2D(uTex,uv).rgb;',
+    '  float s=uv.x*.72+(1.-uv.y)*.28;',
+    '  float edge=uProg*1.55-.22;',
+    '  float a=1.-smoothstep(edge-.28,edge,s);',
+    '  float fin=smoothstep(.82,1.,uProg);',
+    '  vec3 warm=img*mix(vec3(1.10,.99,.84),vec3(1.),fin)+vec3(.05,.03,.0)*(1.-fin);',
+    '  vec3 base=mix(uBase,vec3(1.,.90,.72),.35);',
+    '  vec3 col=mix(base,warm,a);',
+    '  float band=exp(-pow((s-edge+.06)/.11,2.))*(1.-fin)*smoothstep(0.,.08,uProg);',
+    '  col+=vec3(.34,.24,.10)*band;',
+    '  gl_FragColor=vec4(min(col,1.),1.);',
     '}'
   ].join('\n');
 
-  /* ② 暗房安全燈。時間走掉，燈只是稍微暗一點，不閃、不催。
-        亮度上限刻意壓低，讓紙色文字對底色維持 4.5:1 以上。 */
+  /* ② 兩分鐘的日落。uLeft 1 → 0：太陽從高處沉到地平線下，天色從金、到粉、到紫。
+        整片維持明亮的粉彩，深色文字在任何時刻都讀得清楚。時間到了不是結束，是餘暉。 */
   var SAFE_FRAG = PRE + NOISE + [
     'uniform vec2 uRes;uniform float uT;uniform float uFrame;uniform float uLeft;',
     'void main(){',
-    '  vec2 uv=vUv; float asp=uRes.x/uRes.y;',
-    '  vec3 base=vec3(.640,.282,.196);',
-    '  vec2 c=(uv-vec2(.5,.8))*vec2(asp,1.);',
-    '  float lamp=exp(-dot(c,c)*3.2);',
-    '  float br=1.+.018*sin(uT*.9)+.01*sin(uT*2.3+1.);',
-    '  float k=mix(.8,1.,uLeft);',
-    '  float f=fbm(uv*vec2(asp,1.)*2.2+vec2(0.,uT*.03));',
-    '  vec3 col=base*k*(.93+.07*lamp*br+(f-.5)*.05);',
-    '  col+=vec3(.030,.012,.006)*lamp*k;',
-    '  col*=1.-.2*smoothstep(.4,1.2,length((uv-.5)*vec2(asp,1.)));',
-    '  col+=(hash(floor(uv*uRes)+uFrame*vec2(7.,13.))-.5)*.028;',
-    '  gl_FragColor=vec4(col,1.);',
+    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float t=1.-uLeft; float hz=.24;',
+    '  vec3 top=mix(vec3(.935,.815,.720),vec3(.770,.715,.855),t);',
+    '  vec3 mid=mix(vec3(.990,.880,.680),vec3(.960,.770,.750),t);',
+    '  vec3 hor=mix(vec3(1.,.930,.740),vec3(.985,.790,.660),t);',
+    '  vec3 col=mix(hor,mid,smoothstep(hz,hz+.30,uv.y));',
+    '  col=mix(col,top,smoothstep(hz+.25,1.,uv.y));',
+    '  float below=1.-smoothstep(hz-.012,hz+.004,uv.y);',
+    '  col=mix(col,mix(hor,mid,.5)*.955,below);',
+    '  float c=smoothstep(.55,.82,fbm(vec2(uv.x*asp*.8+uT*.004,uv.y*4.)))*smoothstep(hz+.08,hz+.34,uv.y);',
+    '  col=mix(col,mix(vec3(1.,.94,.86),vec3(.95,.82,.84),t),c*.18);',
+    '  vec2 sp=vec2(.5,mix(.80,hz-.085,t));',
+    '  vec2 d=(uv-sp)*vec2(asp,1.); float r=length(d);',
+    '  float above=smoothstep(hz-.004,hz+.004,uv.y);',
+    '  float gone=smoothstep(.93,1.,t);',
+    '  col+=vec3(.10,.07,.02)*exp(-r*r*9.)*(.55+.45*above)*(1.-.45*gone);',
+    '  col+=vec3(.04,.02,.0)*exp(-r*r*1.6)*(1.-.3*gone);',
+    '  col=mix(col,vec3(1.,.975,.89),smoothstep(.076,.069,r)*above*.94);',
+    '  float rx=exp(-pow((uv.x-.5)*asp*4.,2.))*below*(1.-gone);',
+    '  col+=vec3(.06,.04,.01)*rx*(.65+.35*sin(uv.y*80.));',
+    DITHER,
+    '  gl_FragColor=vec4(min(col,1.),1.);',
     '}'
   ].join('\n');
 
-  /* ③ 黃昏背景。抽象化的「車窗外的黃昏」：上方霧桃粉、中間米白的霧、下方褪色的枯草，
-        地平線一條很淡的模糊樹影，整片帶著水平的動態模糊紋與底片顆粒。
-        uFlow 讓景物往旁邊流過（左右滑換天、捲動時都會推一點）；明度起伏壓得很小，不影響文字對比。 */
+  /* ③ 黃昏的天空。上方淡紫粉、中間蜜桃、地平線一帶金色，下面是平靜的倒影。
+        uSun/uGlow：太陽的位置與亮度（今天頁跟著那顆太陽按鈕走；這週頁跟著星期幾橫移）
+        uSet：0 太陽還在，1 已經落下（餘暉，偏紫粉）
+        uTouch：手指碰到的地方光會暖一點、雲會散開；uTilt：傾斜手機的景深位移
+        uFlow/uHz：左右滑時雲橫移、上下換週時地平線跟著動 */
   var AMB_FRAG = PRE + NOISE + [
-    'uniform vec2 uRes;uniform float uT;uniform float uFrame;uniform float uVel;uniform float uWash;uniform float uFlow;',
+    'uniform vec2 uRes;uniform float uT;uniform float uWash;uniform float uFlow;uniform float uSet;uniform float uGlow;uniform float uTouchA;uniform float uHz;',
+    'uniform vec2 uSun;uniform vec2 uTouch;uniform vec2 uTilt;',
     'void main(){',
-    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float y=uv.y;',
-    '  vec3 sky=vec3(.902,.780,.722), haze=vec3(.949,.894,.839), hor=vec3(.886,.812,.741), fld=vec3(.831,.733,.624);',
-    '  vec3 col=mix(fld,hor,smoothstep(0.,.40,y));',
-    '  col=mix(col,haze,smoothstep(.40,.54,y));',
-    '  col=mix(col,sky,smoothstep(.54,1.,y));',
-    '  float fl=uT*.006+uFlow;',
-    '  float st=fbm(vec2(uv.x*asp*.32+fl,y*16.));',
-    '  float ground=1.-smoothstep(.30,.46,y);',
-    '  col*=1.+(st-.5)*(.025+.05*ground);',
-    '  float tb=fbm(vec2(uv.x*asp*1.1+fl*1.7,2.3));',
-    '  float top=.43+tb*.085;',
-    '  float tree=smoothstep(top,top-.07,y)*smoothstep(.33,.41,y);',
-    '  col=mix(col,vec3(.55,.47,.42),tree*.16);',
-    '  col*=1.+sin(y*40.+fl*30.)*uVel*.006;',
+    '  vec2 uv=vUv; float asp=uRes.x/uRes.y; float y=uv.y+uHz; float hz=.36;',
+    '  vec3 top=mix(vec3(.875,.790,.840),vec3(.805,.756,.865),uSet);',
+    '  vec3 mid=mix(vec3(.972,.850,.752),vec3(.950,.805,.795),uSet);',
+    '  vec3 hor=mix(vec3(.992,.900,.740),vec3(.985,.815,.705),uSet);',
+    '  vec3 low=mix(vec3(.925,.810,.730),vec3(.885,.780,.765),uSet);',
+    '  vec3 col=mix(hor,mid,smoothstep(hz,hz+.26,y));',
+    '  col=mix(col,top,smoothstep(hz+.20,1.,y));',
+    '  float below=1.-smoothstep(hz-.02,hz+.01,y);',
+    '  col=mix(col,mix(low,hor,smoothstep(0.,hz,y)*.6),below);',
+    '  vec2 td=(uv-uTouch)*vec2(asp,1.);',
+    '  float tg=exp(-dot(td,td)*12.)*uTouchA;',
+    '  float fl=uT*.004+uFlow;',
+    '  float c=smoothstep(.52,.80,fbm(vec2(uv.x*asp*.9+fl+uTilt.x*.07,y*4.2+uTilt.y*.05)))*smoothstep(hz+.06,hz+.30,y);',
+    '  c*=1.-.75*tg;',
+    '  col=mix(col,mix(vec3(1.,.93,.86),vec3(.935,.815,.850),uSet),c*.17);',
+    '  vec2 sp=uSun+uTilt*.018;',
+    '  vec2 d=(uv-sp)*vec2(asp,1.); float dd=dot(d,d);',
+    '  col+=vec3(.105,.068,.020)*exp(-dd*7.)*uGlow;',
+    '  col+=vec3(.036,.020,.0)*exp(-dd*1.4)*uGlow;',
+    '  float rx=exp(-pow((uv.x-sp.x)*asp*3.2,2.))*below*uGlow;',
+    '  col+=vec3(.045,.028,.004)*rx*(.7+.3*sin(y*70.));',
+    '  col+=vec3(.085,.050,.012)*tg;',
     '  float band=exp(-pow((y-uWash)*5.,2.))*step(.001,uWash)*step(uWash,.999);',
-    '  col+=band*.025;',
-    '  col+=(hash(floor(uv*uRes)+uFrame*vec2(17.,31.))-.5)*.032;',
-    '  gl_FragColor=vec4(col,1.);',
+    '  col+=vec3(.030,.020,.006)*band;',
+    DITHER,
+    '  gl_FragColor=vec4(min(col,1.),1.);',
     '}'
   ].join('\n');
 
@@ -161,11 +180,13 @@
   var ovOpen = 0;                 // 開著的全螢幕疊層數；>0 時背景暫停繪製
   var photos = [];                // 活著的照片 handle
   var safe = null;                // 目前的安全燈 handle（同時只會有一個）
-  var A = { q: null, vel: 0, wash: 0, washing: false, dirty: true, last: 0, flow: 0, fv: 0 };
+  var A = { q: null, vel: 0, wash: 0, washing: false, dirty: true, last: 0, flow: 0, fv: 0,
+    sunEl: null, sun: [0.5, 0.5], sunT: [0.5, 0.5], glow: 0.6, glowT: 0.6, set: 0, setT: 0,
+    touch: [0.5, 0.5], touchA: 0, touchHold: false, tilt: [0, 0], tiltT: [0, 0], hz: 0, hv: 0 };
   var lastSafe = 0;
 
   var dprCap = function () { return Math.min(window.devicePixelRatio || 1, 2); };
-  var frameNo = function (now) { return Math.floor((now - T0) / 83.3) % 997; };   // 約 12fps 的底片顆粒
+  var frameNo = function () { return 0; };   // 顆粒已經拿掉，保留介面
 
   /* ---- 背景 ---- */
   function initAmbient() {
@@ -185,9 +206,29 @@
   function drawAmbient(now) {
     var q = A.q, t = reduced() ? 0 : (now - T0) / 1000;
     q.set('uRes', [q.w, q.h]); q.set('uT', t);
-    q.set('uFrame', reduced() ? 0 : frameNo(now));
-    q.set('uVel', A.vel); q.set('uWash', A.wash); q.set('uFlow', A.flow);
+    q.set('uWash', A.wash); q.set('uFlow', A.flow); q.set('uHz', A.hz);
+    q.set('uSun', A.sun); q.set('uGlow', A.glow); q.set('uSet', A.set);
+    q.set('uTouch', A.touch); q.set('uTouchA', A.touchA); q.set('uTilt', A.tilt);
     if (q.draw()) $('#bg').classList.add('on');
+  }
+  /* 把天空的各個量往目標值靠近；回傳這一格有沒有東西在動 */
+  function stepSky() {
+    var mv = false, k, e;
+    if (A.sunEl) {
+      if (!A.sunEl.isConnected) A.sunEl = null;
+      else { var r = A.sunEl.getBoundingClientRect(); A.sunT = [(r.left + r.width / 2) / innerWidth, 1 - (r.top + r.height / 2) / innerHeight]; }
+    }
+    k = A.sunEl ? 0.5 : 0.08;
+    for (var i = 0; i < 2; i++) {
+      e = A.sunT[i] - A.sun[i]; if (Math.abs(e) > 0.0006) { A.sun[i] += e * (reduced() ? 1 : k); mv = true; }
+      e = A.tiltT[i] - A.tilt[i]; if (Math.abs(e) > 0.002) { A.tilt[i] += e * 0.08; mv = true; }
+    }
+    e = A.glowT - A.glow; if (Math.abs(e) > 0.004) { A.glow += e * (reduced() ? 1 : 0.05); mv = true; }
+    e = A.setT - A.set; if (Math.abs(e) > 0.004) { A.set += e * (reduced() ? 1 : 0.025); mv = true; }
+    if (A.touchHold) { if (A.touchA < 0.99) { A.touchA += (1 - A.touchA) * 0.2; mv = true; } }
+    else if (A.touchA > 0.004) { A.touchA *= 0.955; mv = true; } else A.touchA = 0;
+    if (Math.abs(A.hv) > 1e-5 || Math.abs(A.hz) > 1e-4) { A.hz += A.hv; A.hv = A.hv * 0.86 - A.hz * 0.035; A.hz = clamp(A.hz, -0.06, 0.06); mv = true; } else { A.hz = 0; A.hv = 0; }
+    return mv;
   }
 
   /* ---- 主迴圈：GSAP ticker 是整個 App 唯一的時鐘 ---- */
@@ -199,8 +240,8 @@
       var v = lenis ? Math.min(1, Math.abs(lenis.velocity) / 40) : 0;
       A.vel += (v - A.vel) * 0.12;
       if (!reduced()) { A.flow += A.fv + (lenis ? lenis.velocity * 0.00003 : 0); A.fv *= 0.9; if (Math.abs(A.fv) < 1e-5) A.fv = 0; }
-      var moving = A.vel > 0.01 || A.washing || A.fv !== 0;
-      var gap = reduced() ? Infinity : (moving ? 33 : 83);
+      var moving = stepSky() || A.vel > 0.01 || A.washing || A.fv !== 0;
+      var gap = moving ? 33 : (reduced() ? Infinity : 250);   // 靜止時只跟著雲慢慢飄，一秒四格
       if (A.dirty || now - A.last >= gap) { drawAmbient(now); A.last = now; A.dirty = false; }
     }
 
@@ -210,7 +251,7 @@
     }
 
     if (safe && safe.q.ok && !document.hidden) {
-      if (reduced() ? safe.dirty : (now - lastSafe >= 42)) { safe.render(now); safe.dirty = false; lastSafe = now; }
+      if (safe.dirty || (!reduced() && now - lastSafe >= 100)) { safe.render(now); safe.dirty = false; lastSafe = now; }
     }
   }
 
@@ -324,7 +365,7 @@
       if (reduced() || !hasGSAP) { h.setProg(1); return; }
       h.setProg(0);
       h.tw = gsap.to(h, {
-        prog: 1, duration: dur || 2.4, delay: delay || 0, ease: 'power1.inOut',
+        prog: 1, duration: dur || 1.8, delay: delay || 0, ease: 'power1.inOut',
         onUpdate: function () { h.dirty = true; if (h.fb) applyFallback(h.fb, h.prog); },
         onComplete: function () { if (h.fb) h.fb.style.filter = ''; }
       });
@@ -343,11 +384,10 @@
     photos.push(h);
     return h;
   }
-  /* 沒有 WebGL 時的近似：灰階＋過曝＋低對比，慢慢回到原圖 */
+  /* 沒有 WebGL 時的近似：從偏暖、偏亮淡入到原圖 */
   function applyFallback(img, p) {
     img.style.opacity = String(clamp(p * 2.2, 0, 1));
-    img.style.filter = 'grayscale(' + (1 - clamp((p - 0.4) / 0.6, 0, 1)).toFixed(3) + ') ' +
-      'brightness(' + (1 + 0.8 * (1 - p)).toFixed(3) + ') contrast(' + (0.35 + 0.65 * p).toFixed(3) + ')';
+    img.style.filter = 'sepia(' + (0.35 * (1 - p)).toFixed(3) + ') brightness(' + (1 + 0.25 * (1 - p)).toFixed(3) + ')';
   }
 
   /* ---------------------------------------------------------------- 疊層 */
@@ -477,6 +517,38 @@
       });
     });
     document.addEventListener('visibilitychange', function () { A.dirty = true; });
+    /* 手指碰到的地方，光會暖一點、雲會散開 */
+    var tp = function (x, y, hold) { if (reduced() || !A.q) return; A.touch = [x / innerWidth, 1 - y / innerHeight]; A.touchHold = hold; if (!hold && A.touchA < 0.6) A.touchA = 0.6; };
+    document.addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) tp(t.clientX, t.clientY, true); }, { passive: true });
+    document.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t) tp(t.clientX, t.clientY, true); }, { passive: true });
+    document.addEventListener('touchend', function () { A.touchHold = false; }, { passive: true });
+    document.addEventListener('touchcancel', function () { A.touchHold = false; }, { passive: true });
+    document.addEventListener('mousemove', function (e) { tp(e.clientX, e.clientY, false); }, { passive: true });
+  }
+
+  /* 傾斜手機：雲和光暈有一點景深位移。iPhone 要使用者允許一次（必須在點擊裡呼叫）。 */
+  var tiltOn = false;
+  function onTilt(e) {
+    if (e.gamma == null || reduced()) return;
+    A.tiltT = [clamp(e.gamma / 30, -1, 1), clamp(((e.beta || 0) - 45) / 30, -1, 1)];
+  }
+  function tilt(on) {
+    if (!on) { if (tiltOn) window.removeEventListener('deviceorientation', onTilt); tiltOn = false; A.tiltT = [0, 0]; return Promise.resolve(false); }
+    if (typeof window.DeviceOrientationEvent === 'undefined') return Promise.resolve(false);
+    var go = function () { if (!tiltOn) { window.addEventListener('deviceorientation', onTilt, { passive: true }); tiltOn = true; } return true; };
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      return DeviceOrientationEvent.requestPermission().then(function (r) { return r === 'granted' ? go() : false; }, function () { return false; });
+    }
+    return Promise.resolve(go());
+  }
+  /* 天空的狀態。o.el：跟著這個元素走（今天頁的太陽）；o.sun：[x,y]（0–1，y 往上）；o.glow 亮度；o.set 0–1 是否已落下 */
+  function sky(o) {
+    o = o || {};
+    if ('el' in o) A.sunEl = o.el || null;
+    if (o.sun) { A.sunEl = null; A.sunT = [o.sun[0], o.sun[1]]; }
+    if (o.glow != null) A.glowT = o.glow;
+    if (o.set != null) A.setT = o.set;
+    A.dirty = true;
   }
 
   window.FX = {
@@ -485,9 +557,11 @@
     ov: ov,
     enter: enter, develop: developText, pulse: pulse, nav: nav, navDot: navDot,
     /* 左右滑換天時呼叫：背景像車窗外的景一樣往旁邊流過一點 */
-    flow: function (dx) { if (!reduced() && A.q) A.fv += (dx || 0) * 0.00004; },
+    flow: function (dx, dy) { if (reduced() || !A.q) return; A.fv += (dx || 0) * 0.00004; if (dy) A.hv = clamp(A.hv + dy * 0.00006, -0.012, 0.012); },
+    sky: sky, tilt: tilt, tiltSupported: typeof window.DeviceOrientationEvent !== 'undefined',
+    calm: function (on) { calm = !!on; document.documentElement.classList.toggle('calm', calm); if (calm) { A.tiltT = [0, 0]; A.touchA = 0; A.touchHold = false; } A.dirty = true; },
     photo: { mount: mountPhoto },
-    safelight: { mount: mountSafelight }
+    safelight: { mount: mountSafelight }, sunset: { mount: mountSafelight }
   };
   init();
 })();
