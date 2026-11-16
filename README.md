@@ -108,3 +108,19 @@ Dashboard 要開：
 - 提示詞（system prompt）放在後端，使用者改不了，也不能把它當成免費的通用 Claude 用。
 - 用量上限：每個帳號每天最多 6 次（台北時間，`DAILY_LIMIT`），計數放在 `observe_usage` 資料表，只有後端讀得到。請求大小、照片張數也有上限。
 - 費用：每次呼叫約是 10 張縮圖加整份紀錄文字。上線前請到 Anthropic Console 設定月額度上限。
+
+## 種子測試：同意、邀請碼、研究資料（v13）
+
+- 第一次使用（含舊使用者更新後）會先看到「開始之前」同意頁，三個獨立選項：雲端備份、顯影、參與研究（預設不勾）。同意紀錄存在 `consents` 表（只增不改）。
+- 顯影只對有邀請碼的參與者開放。邀請碼放在 `invites` 表，`ai_offset_days` 決定兌換後第幾天開始有顯影：`0` 立刻、`21` 三週後、`null` 只記錄（對照組）。
+  ```sql
+  insert into public.invites(code,label,ai_offset_days,max_uses) values
+    ('REV-A01','ai_now',0,1), ('REV-B01','ai_week4',21,1), ('REV-C01','log_only',null,1);
+  ```
+  團隊測試碼：`REVELA-TEAM`（立刻開始，5 人）。
+- 門檻：滿 8 則且跨 7 天才呼叫顯影（App 與後端都檢查，不到不扣次數）。
+- 回饋三級：有意思／普通／完全不對（`interesting`／`meh`／`wrong`）。
+- 觀察紀錄 `observations`：同意研究的人，每次呼叫（含沉默與 why 備註）由後端寫入；使用者只能改回饋欄位。
+- 研究資料：在 SQL Editor 查 `research.participants`、`research.observations`、`research.entry_activity`。只含同意研究的人，帳號換成代號，不含 email、照片、使用者寫的句子。這個 schema 不對外開放。
+- 刪除帳號：設定 → 刪除我的帳號（Edge Function `account`），刪掉照片、所有資料表與帳號本身。
+- SQL 原始碼：`supabase/research.sql`；函式：`supabase/functions/observe`、`supabase/functions/account`。

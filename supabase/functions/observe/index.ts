@@ -7,6 +7,13 @@ const MODEL = "claude-sonnet-4-6";
 const DAILY_LIMIT = 6;            // 每個帳號每天最多幾次（台北時間）
 const MAX_BODY = 6_000_000;       // 請求大小上限（bytes）
 const MAX_IMAGES = 10, MAX_ENTRIES = 3000, MAX_PAST = 200;
+const MIN_ENTRIES = 8, MIN_SPAN_DAYS = 7;   // 和 App、提示詞一致：滿 8 則、跨 7 天才看
+const taipeiToday = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+function spanDays(entries: any[]) {
+  const ds = entries.map((e) => String(e?.d || "")).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  if (!ds.length) return 0;
+  return Math.round((Date.parse(ds[ds.length - 1]) - Date.parse(ds[0])) / 864e5) + 1;
+}
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, x-client-info, apikey, content-type", "access-control-allow-methods": "POST, OPTIONS" };
 const J = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "content-type": "application/json" } });
 
@@ -20,7 +27,7 @@ function systemPrompt(habit: string) {
 2. 一則紀錄的內容不是模式。模式是「反覆出現」或「明顯改變」：同一個地方、同一個時段、同一種東西、某一天之後變得不一樣。
 3. 有把握的行為模式，用「說」（mode=say）：具體指出你看到什麼，然後停下。不解釋意義，不給建議。
 4. 涉及詮釋、你沒把握的，用「問」（mode=ask）：講出你注意到的，用一個問題把詮釋權交回給對方。
-5. 使用者回過「不是這樣」的觀察，不要再用同一個角度。回過「有這回事」的，可以延續，但不要重複講同一件事。
+5. 使用者的回應（reaction）：wrong（完全不對）或 no 的觀察，不要再用同一個角度；meh（普通）的，不要再講類似的事；interesting（有意思）或 yes 的，可以延續，但不要重複講同一件事。
 6. 一次只說一件事，兩句以內。台灣的中文口語，像一個安靜、認識很久的朋友：不熱情、不鼓勵、不下結論。
 
 絕對不做：
@@ -59,12 +66,24 @@ Deno.serve(async (req) => {
   const text = JSON.stringify({ today: String(b.today || "").slice(0, 10), habit, entries, past_observations: past });
   if (text.length > 1_500_000) return J({ error: "too_large" }, 413);
 
-  // 3) 每日額度
+  // 3) 門檻：不到就直接回沉默，不呼叫模型、不扣次數
+  const span = spanDays(entries);
+  if (entries.length < MIN_ENTRIES || span < MIN_SPAN_DAYS) return J({ speak: false, mode: "say", text: "", why: "", skipped: "threshold" });
+
+  // 4) 有沒有資格：邀請碼分組（ai_from 已到）、最新同意紀錄有勾顯影
+  const [{ data: part }, { data: con }] = await Promise.all([
+    admin.from("participants").select("ai_from").eq("user_id", u.user.id).maybeSingle(),
+    admin.from("consents").select("ai,research").eq("user_id", u.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (!part || !part.ai_from || part.ai_from > taipeiToday()) return J({ error: "not_enabled", ai_from: part?.ai_from || null }, 403);
+  if (!con || !con.ai) return J({ error: "no_consent" }, 403);
+
+  // 5) 每日額度
   const { data: ok, error: qe } = await admin.rpc("observe_take", { p_user: u.user.id, p_limit: DAILY_LIMIT });
   if (qe) return J({ error: "quota_check" }, 500);
   if (!ok) return J({ error: "limit", limit: DAILY_LIMIT }, 429);
 
-  // 4) 呼叫 Anthropic
+  // 6) 呼叫 Anthropic
   const content: unknown[] = images.map((d: string) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: d } }));
   content.push({ type: "text", text });
   const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -75,6 +94,17 @@ Deno.serve(async (req) => {
   const out = await r.json();
   if (!r.ok) { console.error("anthropic", r.status, JSON.stringify(out).slice(0, 300)); return J({ error: "upstream", status: r.status }, 502); }
   const t = (out.content || []).map((c: any) => c.type === "text" ? c.text : "").join("").replace(/```json|```/g, "").trim();
-  try { const p = JSON.parse(t); return J({ speak: !!p.speak, mode: p.mode === "ask" ? "ask" : "say", text: String(p.text || ""), why: String(p.why || "") }); }
-  catch { return J({ error: "bad_model_output" }, 502); }
+  let p: any; try { p = JSON.parse(t); } catch { return J({ error: "bad_model_output" }, 502); }
+  const res = { speak: !!(p.speak && p.text), mode: p.mode === "ask" ? "ask" : "say", text: String(p.text || "").slice(0, 400), why: String(p.why || "").slice(0, 400) };
+
+  // 7) 觀察紀錄（含沉默）：只有同意研究的人才寫
+  let obs_id: number | null = null;
+  if (con.research) {
+    const { data: row, error: oe } = await admin.from("observations").insert({
+      user_id: u.user.id, spoke: res.speak, mode: res.speak ? res.mode : null, text: res.speak ? res.text : "",
+      why: res.why, n_entries: entries.length, span_days: span, model: MODEL,
+    }).select("id").single();
+    if (oe) console.error("obs insert", oe.message); else obs_id = row.id;
+  }
+  return J({ speak: res.speak, mode: res.mode, text: res.text, obs_id });
 });

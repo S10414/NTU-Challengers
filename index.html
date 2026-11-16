@@ -151,6 +151,18 @@
   .print .fb .chosen{font-size:13px;color:var(--ink-2)}
   .print textarea{width:100%;margin-top:10px;background:transparent;border:0;border-bottom:1px solid var(--ink-3);padding:6px 0;resize:none;font-family:var(--serif);font-size:15px;line-height:1.6}
   .print .reply{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin-top:10px;padding-left:10px;border-left:2px solid var(--ink-3)}
+  .consent h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:28px 0 6px}
+  .consent .sub{font-size:14px;color:var(--ink-2);margin:0 0 18px;line-height:1.7}
+  .consent h3{font-size:15px;font-weight:600;margin:22px 0 6px}
+  .consent p,.consent li{font-size:14px;line-height:1.8;color:var(--ink-2);margin:0 0 6px}
+  .consent ul{padding-left:18px;margin:0 0 6px}
+  .opt{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);cursor:pointer}
+  .opt:last-of-type{border-bottom:1px solid var(--line)}
+  .opt input{width:22px;height:22px;flex:none;margin:2px 0 0;accent-color:var(--ink)}
+  .opt b{display:block;font-size:15px;font-weight:600;margin-bottom:2px}
+  .opt span{font-size:13px;line-height:1.6;color:var(--ink-2)}
+  .consent .codein,#view.v-settings .codein{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:2px;padding:11px 12px;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+  .capnote{font-size:12px;line-height:1.6;opacity:.85;margin:-4px 0 12px}
   .agent-sec{margin-top:44px;padding-top:22px;border-top:1px solid var(--line)}
   .agent-sec h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 6px}
   .agent-sec .lead{font-size:15px;color:var(--ink-2);margin:0 0 10px}
@@ -341,6 +353,7 @@ function render(o){
   $('#hdate').textContent=fmtDate(new Date());
   $('header.top h1').style.visibility=S.settings?'':'hidden';   // 開場頁已經有大字標，不重複
   if(!S.settings){ $('#tabs').style.display='none'; $('#view').innerHTML=viewOnboard(); if(o.enter) fx.enter($('#view')); return; }
+  if(!consent()||S.consentRead){ $('#tabs').style.display=S.consentRead?'':'none'; $('#view').className='v-consent'; $('#view').innerHTML=viewConsent(!!S.consentRead&&!!consent()); if(o.enter) fx.enter($('#view')); return }
   $('#tabs').style.display='';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
   if(!o.nav&&dotView!==S.view&&fx.navDot(S.view,true)) dotView=S.view;
@@ -357,9 +370,8 @@ function viewOnboard(){
   return `<div class="onb">
     <h1>Revela</h1>
     <p>每天一個隨機的時刻，拍下現在。</p>
-    <p>只有你看得到。沒有讚，沒有追蹤，沒有連續天數。</p>
+    <p>沒有讚，沒有追蹤，沒有連續天數。別人看不到你的紀錄。</p>
     <p>它會慢慢看，只在看見什麼的時候才說話。</p>
-    <p style="font-size:14px;color:var(--ink-2);margin-top:14px">照片會自動備份到雲端，只有你看得到。不想的話，之後可以在設定裡暫停。</p>
     <label for="habit">除了日常，你想記的一個習慣</label>
     <input id="habit" value="健身" maxlength="8">
     <button class="btn fill wide" data-act="onboard">開始</button>
@@ -524,22 +536,30 @@ function goWeek(dir){
   const b=$('#booth'); if(!b) return; const min=minWeekOff();
   const off=Math.max(min,Math.min(0,S.weekOff+dir)); b.scrollTo({top:(off-min)*boothH,behavior:smooth()});
 }
-function agentReady(){ const days=new Set(S.entries.map(e=>e.date)); return S.entries.length>=6&&days.size>=3 }
+/* 和後端、提示詞一致：滿 8 則，且第一則到最後一則跨 7 天 */
+const MIN_ENTRIES=8, MIN_SPAN_DAYS=7;
+function spanDays(){ if(!S.entries.length) return 0; const ds=S.entries.map(e=>e.date).sort(); return Math.round((parseD(ds[ds.length-1])-parseD(ds[0]))/864e5)+1 }
+function agentReady(){ return S.entries.length>=MIN_ENTRIES&&spanDays()>=MIN_SPAN_DAYS }
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
+const RX={interesting:'有意思',meh:'普通',wrong:'完全不對',yes:'有這回事',no:'不是這樣'};
 function agentSec(){
+  if(!aiOn()) return '';
+  const p=part();
+  if(!p||!p.ai_from) return '';
+  if(!partActive()) return `<section class="agent-sec"><h2>顯影</h2><p class="status">顯影會在 ${aiFromStr(p.ai_from)}開始看。在那之前，照常記錄就好。</p></section>`;
   const hasKey=agentCan();
   let status;
   if(S.busy) status='它在看。';
   else if(S.err) status=S.err;
-  else if(!hasKey) status=bkOn()?'還在準備。連上網路之後它就開始看。':'它需要雲端備份開著才看得了。到設定重新開啟備份。';
-  else if(!agentReady()) status='還在累積。它需要幾天的紀錄，才看得出什麼是反覆出現的。';
+  else if(!hasKey) status='還在準備。連上網路之後它就開始看。';
+  else if(!agentReady()) status=`還在累積。滿一週、${MIN_ENTRIES} 則以上，它才看得出什麼是反覆出現的。`;
   else if(!S.agentMeta.lastCheck) status='還沒看過。';
   else status=`上次看是${rel(S.agentMeta.lastCheck)}。${S.agentMeta.lastSpoke?'':'那次沒有想說的。'}`;
   const prints=S.agentLog.slice().reverse().map(m=>`<div class="print"${m.id===S.freshId?' data-fresh':''}>
     <p class="txt">${esc(m.text)}</p>
     <div class="when">${new Date(m.ts).getMonth()+1}月${new Date(m.ts).getDate()}日</div>
-    <div class="fb">${m.reaction?`<span class="chosen">你說：${m.reaction==='yes'?'有這回事':'不是這樣'}</span>`:
-      `<button class="btn" data-act="react" data-id="${m.id}" data-r="yes">有這回事</button><button class="btn" data-act="react" data-id="${m.id}" data-r="no">不是這樣</button>`}</div>
+    <div class="fb">${m.reaction?`<span class="chosen">你說：${RX[m.reaction]||''}</span>`:
+      `<button class="btn" data-act="react" data-id="${m.id}" data-r="interesting">有意思</button><button class="btn" data-act="react" data-id="${m.id}" data-r="meh">普通</button><button class="btn" data-act="react" data-id="${m.id}" data-r="wrong">完全不對</button>`}</div>
     ${m.reply?`<div class="reply">${esc(m.reply)}</div>`:(m.reaction?`<textarea rows="1" placeholder="想補一句的話（可以不寫）" data-reply="${m.id}"></textarea><div style="margin-top:8px"><button class="link" data-act="reply" data-id="${m.id}">送出</button></div>`:'')}
   </div>`).join('');
   return `<section class="agent-sec"><h2>顯影</h2>
@@ -577,6 +597,7 @@ function renderCap(){
     <p class="now">現在。</p>
     <div id="cd" class="cd">2:00</div><div class="latemsg" id="latemsg"></div>
     <div class="chips">${chips}</div>
+    ${c.theme==='people'?'<p class="capnote">拍到別人之前先問過對方，或避開正臉。</p>':''}
     ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>`:''}
     <label class="camlab">${c.img?'重拍':'打開相機'}<input type="file" accept="image/*" capture="environment" data-file="1"></label>
     <input class="line" placeholder="一句話就好。可以不寫。" maxlength="40" value="${esc(c.line)}" data-line="1">
@@ -884,6 +905,121 @@ async function saveExport(){
 }
 function closeSave(){ expGen++; fx.ov.hide($('#ovSave')) }
 
+/* ---------- 同意與種子測試 ----------
+   同意紀錄：S.settings.consent = {v, backup, ai, research, ts, syncedUid}（本機先存，登入後寫入 consents 表）
+   分組：S.settings.part = {ai_from, uid}（伺服器 participants 表的快取）；S.settings.pendingCode = 還沒兌換的邀請碼 */
+const CONSENT_V='v1';
+const consent=()=>(S.settings&&S.settings.consent)||null;
+const aiOn=()=>{ const c=consent(); return !!(c&&c.ai) };
+const researchOn=()=>{ const c=consent(); return !!(c&&c.research) };
+const part=()=>(S.settings&&S.settings.part)||null;
+const aiFromStr=d=>{ const x=parseD(d); return `${x.getMonth()+1} 月 ${x.getDate()} 日` };
+const partActive=()=>{ const p=part(); return !!(p&&p.ai_from&&p.ai_from<=dkey(new Date())) };
+async function saveSettings(patch){ S.settings=Object.assign({},S.settings,patch); await kvSet('settings',S.settings) }
+async function consentSet(patch){
+  const c=Object.assign({v:CONSENT_V,backup:true,ai:true,research:false},consent()||{},patch,{v:CONSENT_V,ts:Date.now(),syncedUid:null});
+  await saveSettings({consent:c,backup:c.backup});
+  syncStudy();
+}
+/* 帳號在的時候：補寫同意紀錄、兌換邀請碼、讀分組 */
+let studyBusy=false;
+async function syncStudy(){
+  if(!SB.client||!SB.user||studyBusy||!S.settings) return;
+  studyBusy=true; const uid=SB.user.id, before=JSON.stringify(part());
+  try{
+    const c=consent();
+    if(c&&c.syncedUid!==uid){
+      const {error}=await SB.client.from('consents').insert({user_id:uid,version:c.v,backup:!!c.backup,ai:!!c.ai,research:!!c.research});
+      if(!error) await saveSettings({consent:Object.assign({},c,{syncedUid:uid})}); else console.error('consent',error);
+    }
+    if(S.settings.pendingCode){ await redeemCode(S.settings.pendingCode,true) }
+    const {data,error}=await SB.client.from('participants').select('ai_from').eq('user_id',uid).maybeSingle();
+    if(!error){
+      const np=data?{ai_from:data.ai_from||null,uid}:null, op=part();
+      if(JSON.stringify(np)!==JSON.stringify(op)) await saveSettings({part:np});
+    }
+    if(JSON.stringify(part())!==before&&!S.cap&&S.view!=='settings') render();
+    await syncFeedback();
+  }catch(err){ console.error('study',err) }
+  studyBusy=false;
+  refreshStudy();
+}
+async function fnCall(name,body){
+  const {data:ss}=await SB.client.auth.getSession(); const tok=ss&&ss.session&&ss.session.access_token; if(!tok) throw new Error('auth');
+  const res=await fetch(window.SUPABASE_CONFIG.url.replace(/\/$/,'')+'/functions/v1/'+name,{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok,'apikey':window.SUPABASE_CONFIG.anonKey},body:JSON.stringify(body)});
+  const out=await res.json().catch(()=>({}));
+  return {status:res.status,ok:res.ok&&!out.error,out};
+}
+/* 兌換邀請碼；還沒有帳號時先記著，登入後自動兌換 */
+async function redeemCode(code,quiet){
+  code=String(code||'').trim().toUpperCase(); if(!code) return;
+  if(!SB.client||!SB.user||!navigator.onLine){ await saveSettings({pendingCode:code}); S.studyMsg='邀請碼記下了，連上網路後會自動啟用。'; if(!SB.user) sbEnsure(); refreshStudy(); return }
+  try{
+    const r=await fnCall('account',{action:'redeem',code});
+    if(r.ok){ await saveSettings({pendingCode:null,part:{ai_from:r.out.ai_from||null,uid:SB.user.id}}); S.studyMsg=r.out.already?'這個帳號已經加入過了。':'加入了，謝謝你。'; if(!quiet&&!S.cap) render() }
+    else if(r.out.error==='bad_code'){ await saveSettings({pendingCode:null}); S.studyMsg='這個邀請碼不對，或已經用完了。' }
+    else S.studyMsg='沒有成功，等一下再試。';
+  }catch(err){ console.error(err); S.studyMsg='沒有成功，等一下再試。' }
+  refreshStudy();
+}
+async function syncFeedback(){
+  if(!SB.client||!SB.user||!researchOn()) return;
+  let dirty=false;
+  for(const m of S.agentLog){
+    if(!m.obsId||!m.fbDirty) continue;
+    const {error}=await SB.client.from('observations').update({reaction:m.reaction||null,reply:m.reply||'',reacted_at:new Date().toISOString()}).eq('id',m.obsId);
+    if(!error){ m.fbDirty=false; dirty=true }
+  }
+  if(dirty) await kvSet('agentLog',S.agentLog);
+}
+function studyHTML(){
+  const c=consent()||{}, p=part();
+  let grp='';
+  if(p){
+    grp=!p.ai_from?'你是種子測試的參與者。這段期間只記錄，不會有顯影。':(partActive()?'你是種子測試的參與者，顯影已經開始。':`你是種子測試的參與者，顯影會在 ${aiFromStr(p.ai_from)}開始。`);
+  }
+  const pend=S.settings&&S.settings.pendingCode;
+  return `<h3>顯影與研究</h3>
+    <label class="opt"><input type="checkbox" data-consent="ai" ${c.ai?'checked':''}><div><b>顯影</b><span>會把紀錄的文字和最近 10 張縮圖送到 Anthropic 產生觀察。關掉後它就不再看。</span></div></label>
+    <label class="opt"><input type="checkbox" data-consent="research" ${c.research?'checked':''}><div><b>參與研究（選填）</b><span>讓團隊用代號分析顯影說過的話、你的回饋和記錄的頻率。不看照片和你寫的句子。</span></div></label>
+    <p style="margin-top:12px">${grp||(pend?`邀請碼 ${esc(pend)} 等連上網路後啟用。`:'顯影目前只開放給種子測試的參與者。有邀請碼的話填在這裡：')}</p>
+    ${p?'':`<div class="row2"><input type="text" class="codein" id="setCode" autocomplete="off" autocapitalize="characters" placeholder="邀請碼"><button class="btn" data-act="redeem">加入</button></div>`}
+    ${S.studyMsg?`<p class="st">${esc(S.studyMsg)}</p>`:''}
+    <p style="margin-top:10px"><button class="link" data-act="consentread">看完整說明</button></p>`;
+}
+function refreshStudy(){ const g=$('#studyGrp'); if(g) g.innerHTML=studyHTML() }
+function consentBody(){
+  return `<h3>你的紀錄存在哪裡</h3>
+    <p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>
+    <h3>顯影會看到什麼</h3>
+    <p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。</p>
+    <h3>研究用途（選填）</h3>
+    <p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
+    <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li></ul>
+    <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。</p>
+    <h3>拍到別人的時候</h3>
+    <p>「身邊的人」可能會拍到別人。拍之前先問過對方，或避開正臉。這些照片也可能被送給顯影看。</p>
+    <h3>隨時可以改</h3>
+    <p>下面三個選項，之後都能在設定裡改。你也可以在設定裡刪除帳號：手機和雲端上的照片、紀錄、顯影的觀察，以及帳號本身都會刪掉。</p>`;
+}
+function viewConsent(read){
+  const c=consent()||{backup:true,ai:true,research:false};
+  if(read) return `<div class="consent"><h2>Revela 怎麼處理你的資料</h2>${consentBody()}
+    <div style="margin:28px 0 40px"><button class="btn fill wide" data-act="consentback">回到設定</button></div></div>`;
+  return `<div class="consent"><h2>開始之前</h2>
+    <p class="sub">花一分鐘看一下 Revela 怎麼處理你的照片和文字。</p>
+    ${consentBody()}
+    <h3 style="margin-top:28px">你的選擇</h3>
+    <label class="opt"><input type="checkbox" id="cBackup" ${c.backup!==false?'checked':''}><div><b>雲端備份</b><span>換手機或清掉資料時拿得回來。</span></div></label>
+    <label class="opt"><input type="checkbox" id="cAi" ${c.ai!==false?'checked':''}><div><b>顯影</b><span>讓它看你的紀錄，看見反覆出現的事才開口。種子測試期間要有邀請碼才會開始。</span></div></label>
+    <label class="opt"><input type="checkbox" id="cResearch" ${c.research?'checked':''}><div><b>參與研究（選填）</b><span>讓團隊用代號分析上面說的資料。不勾也能正常使用。</span></div></label>
+    <h3>邀請碼（選填）</h3>
+    <input type="text" class="codein" id="cCode" autocomplete="off" autocapitalize="characters" placeholder="收到邀請碼的話填在這裡" value="${esc((S.settings&&S.settings.pendingCode)||'')}">
+    <div style="margin:26px 0 12px"><button class="btn fill wide" data-act="consentok">同意並開始</button></div>
+    <p class="small muted" style="margin-bottom:40px">三個都不勾也能用 Revela，紀錄只會存在這支手機。</p></div>`;
+}
+
 /* ---------- 雲端備份（Supabase） ----------
    預設不用登入：第一次開啟就用「匿名登入」自動備份（照片 → Storage photos/<uid>/<id>.jpg、資料 → entries）。
    匿名帳號清掉瀏覽器資料或換手機就找不回來，所以設定裡可以「綁定 email」（選填）：
@@ -903,17 +1039,18 @@ function sbInit(){
   SB.client.auth.onAuthStateChange((ev,session)=>{
     const u=session?session.user:null, changed=(u&&u.id)!==(SB.user&&SB.user.id);
     SB.user=u; refreshBk();
-    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(()=>{ syncAll(); maybeAutoRun() },0) }
+    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(async()=>{ syncAll(); await syncStudy(); maybeAutoRun() },0) }
   });
   SB.client.auth.getSession().then(()=>sbEnsure());
 }
 /* 沒有登入、備份又是開著的，就在背景建立匿名帳號（要先有網路，沒網路等 online 事件） */
 async function sbEnsure(){
-  if(!SB.client||SB.user||SB.anonBusy||!S.settings||!bkOn()||!navigator.onLine) return;
+  const need=bkOn()||aiOn()||researchOn()||!!(S.settings&&S.settings.pendingCode);
+  if(!SB.client||SB.user||SB.anonBusy||!S.settings||!consent()||!need||!navigator.onLine) return;
   SB.anonBusy=true; SB.anonErr='';
   try{
     const {data,error}=await SB.client.auth.getSession();
-    if(!error&&data&&data.session){ SB.user=data.session.user; return }
+    if(!error&&data&&data.session){ SB.user=data.session.user; syncStudy(); return }
     const r=await SB.client.auth.signInAnonymously();
     if(r.error) throw r.error;
   }catch(err){ console.error('anon',err); SB.anonErr=String(err&&err.message||err) }
@@ -921,6 +1058,7 @@ async function sbEnsure(){
 }
 async function setBackup(on){
   S.settings=Object.assign({},S.settings,{backup:on}); await kvSet('settings',S.settings);
+  if(consent()&&consent().backup!==on) await consentSet({backup:on});
   if(on){ await sbEnsure(); syncSoon(300) }
   refreshBk(); const n=$('#dataNote'); if(n) n.textContent=dataNote();
 }
@@ -1073,16 +1211,18 @@ function viewSettings(){
       <input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"></div>
     <div class="grp"><button class="btn fill wide" data-act="setsave">存起來</button><p id="setMsg" class="small muted" style="margin-top:8px"></p></div>
     <div class="grp bk" id="bkGrp">${bkHTML()}</div>
+    <div class="grp" id="studyGrp">${studyHTML()}</div>
     <div class="grp"><h3>資料</h3>
       <p id="dataNote">${dataNote()}</p>
       <button class="link" data-act="export">匯出成一個檔案</button><br><br>
-      <button class="link" data-act="reset">清掉所有紀錄</button></div>
+      <button class="link" data-act="reset">清掉這支手機上的紀錄</button><br><br>
+      <button class="link" data-act="delacct">刪除我的帳號</button></div>
     <div class="grp"><p style="font-size:12px;opacity:.7">版本 ${APP_VER}</p></div>`;
 }
 
 /* ---------- 顯影：觀察者 ---------- */
 /* 顯影在我們自己的後端（Supabase Edge Function「observe」）執行，金鑰只存在後端 */
-const agentCan=()=>!!(SB.client&&SB.user&&bkOn());
+const agentCan=()=>!!(SB.client&&SB.user&&aiOn()&&partActive());
 async function runAgent(){
   if(S.busy||!agentReady()||!agentCan()) return;
   S.busy=true; S.err=''; render();
@@ -1096,9 +1236,11 @@ async function runAgent(){
       body:JSON.stringify({today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past,images:imgs})});
     const out=await res.json().catch(()=>({}));
     if(res.status===429){ S.err='今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
+    if(res.status===403){ S.err=out.error==='no_consent'?'顯影的同意紀錄還沒傳上去，等一下再試。':'顯影還沒對這個帳號開放。'; S.busy=false; syncStudy(); render(); return }
+    if(out.skipped){ S.agentMeta=Object.assign({},S.agentMeta,{lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:false}); await kvSet('agentMeta',S.agentMeta); S.busy=false; render(); return }
     if(!res.ok||out.error) throw new Error(out.error||('http '+res.status));
     S.agentMeta={lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:!!(out.speak&&out.text)};
-    if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:''}); await kvSet('agentLog',S.agentLog) }
+    if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:'',obsId:out.obs_id||null}); await kvSet('agentLog',S.agentLog) }
     await kvSet('agentMeta',S.agentMeta);
   }catch(e){ console.error(e); S.err='它這次沒看清楚。等一下再讓它看一次。' }
   S.busy=false; render();
@@ -1109,6 +1251,13 @@ function maybeAutoRun(){
   if(!fresh&&S.entries.length>(m.lastCount||0)) runAgent();
 }
 
+async function wipeLocal(){
+  SB.user=null; SB.anonErr=''; S.studyMsg='';
+  await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
+  for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
+  S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today'; S.consentRead=false;
+  await ensureMoment();
+}
 /* ---------- 事件 ---------- */
 document.addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-act]'); if(!a) return;
@@ -1136,8 +1285,8 @@ document.addEventListener('click',async ev=>{
     case 'edel':{ if(!confirm('刪掉這一則？')) break; S.entries=S.entries.filter(x=>x.id!==d.id); await delEntry(d.id); await delPhoto(d.id); forgetURL(d.id); queueDel(d.id); closeEntry(); render(); break }
     case 'play': playWeek(); break;
     case 'check': runAgent(); break;
-    case 'react':{ const m=S.agentLog.find(x=>x.id===d.id); if(m){ m.reaction=d.r; await kvSet('agentLog',S.agentLog); render() } break }
-    case 'reply':{ const m=S.agentLog.find(x=>x.id===d.id); const ta=document.querySelector(`[data-reply="${d.id}"]`); if(m&&ta&&ta.value.trim()){ m.reply=ta.value.trim().slice(0,200); await kvSet('agentLog',S.agentLog) } render(); break }
+    case 'react':{ const m=S.agentLog.find(x=>x.id===d.id); if(m){ m.reaction=d.r; m.fbDirty=!!m.obsId; await kvSet('agentLog',S.agentLog); render(); syncFeedback() } break }
+    case 'reply':{ const m=S.agentLog.find(x=>x.id===d.id); const ta=document.querySelector(`[data-reply="${d.id}"]`); if(m&&ta&&ta.value.trim()){ m.reply=ta.value.trim().slice(0,200); m.fbDirty=!!m.obsId; await kvSet('agentLog',S.agentLog); syncFeedback() } render(); break }
     case 'settings': openSettings(); break;
     case 'sbsend': sbSend(); break;
     case 'sbverify': sbVerify(); break;
@@ -1153,16 +1302,30 @@ document.addEventListener('click',async ev=>{
       await kvSet('settings',S.settings); const m=$('#setMsg'); if(m) m.textContent='存好了。'; break }
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
       const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
+    case 'consentok':{
+      const code=($('#cCode').value||'').trim();
+      await consentSet({backup:$('#cBackup').checked,ai:$('#cAi').checked,research:$('#cResearch').checked});
+      if(code) await saveSettings({pendingCode:code.toUpperCase()});
+      S.view='today'; render({enter:true}); await sbEnsure(); if(SB.user) syncStudy(); syncSoon(400); break }
+    case 'consentread': S.consentRead=true; render({enter:true}); break;
+    case 'consentback': S.consentRead=false; S.view='settings'; render({enter:true}); break;
+    case 'redeem':{ const v=($('#setCode')||{}).value; if(v&&v.trim()){ S.studyMsg='加入中…'; refreshStudy(); await redeemCode(v) } break }
+    case 'delacct':{
+      if(!confirm('刪除帳號會把雲端上的照片、紀錄、顯影的觀察和你的帳號一起刪掉，這支手機上的資料也會清空。\n無法復原，確定嗎？')) break;
+      if(SB.client&&SB.user){
+        if(!navigator.onLine){ alert('要連上網路才能刪除雲端的資料。'); break }
+        try{ const r=await fnCall('account',{action:'delete'}); if(!r.ok) throw new Error(r.out.error||r.status) }
+        catch(err){ console.error(err); alert('刪除沒有完成，請再試一次。手機上的資料還在。'); break }
+        try{ await SB.client.auth.signOut({scope:'local'}) }catch{}
+      }
+      await wipeLocal(); alert('帳號和資料都刪掉了。'); render({enter:true}); break }
     case 'reset':{ if(!confirm(SB.user?'清掉這支手機上的所有紀錄與它說過的話？雲端備份不會被刪（要刪請先在設定裡按「刪除雲端上的所有資料」）。這支手機會登出，沒有綁定 email 的話，雲端那份之後就找不回來了。':'清掉所有紀錄與它說過的話？這無法復原。')) break;
       if(SB.client&&SB.user){ try{ await SB.client.auth.signOut({scope:'local'}) }catch{} }
-      SB.user=null; SB.anonErr='';
-      await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
-      for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
-      S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today';
-      await ensureMoment(); render(); break }
+      await wipeLocal(); render(); break }
   }
 });
 document.addEventListener('change',async ev=>{
+  if(ev.target.matches('[data-consent]')){ const k=ev.target.dataset.consent; await consentSet({[k]:ev.target.checked}); if(ev.target.checked) sbEnsure(); refreshStudy(); return }
   if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=$('[data-line]').value; const r=await processPhoto(f); S.cap.img=r?r.img:null; S.cap.full=r?r.full:null; renderCap() }
 });
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
@@ -1188,7 +1351,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v12';
+const APP_VER='v13';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
