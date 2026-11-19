@@ -545,7 +545,7 @@ function mountOnb(){
   }else if(ob.step===4){
     let left=119; const tick=()=>{ const e=$('#obCd'); if(!e) return; left=left<=0?119:left-1; e.textContent=`${Math.floor(left/60)}:${pad(left%60)}` };
     obTimers.push(setInterval(tick,1000));
-    T(()=>obGo(5),4200);
+    T(()=>obGo(5),2500);
   }else if(ob.step===5){
     const scr=$('#obDemo'), cap=$('#obCap'); if(!scr) return;
     const scenes=[
@@ -1666,7 +1666,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v21';
+const APP_VER='v22';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
