@@ -281,6 +281,7 @@
   .ob-opt:active{transform:scale(.985)}
   .ob-opt.on{border-color:var(--ink);background:var(--paper)}
   .ob-foot{padding:16px 0 max(22px,env(safe-area-inset-bottom))}
+  .ob-body.auto{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   .ob-foot .btn{border-radius:999px;padding:16px;font-size:16px}
   .ob-foot .btn:disabled{opacity:.3}
   .ob-pile{position:relative;flex:1;min-height:340px;margin:8px -22px 0;overflow:hidden}
@@ -510,8 +511,9 @@ function viewOnboard(){
       <input id="habit" value="${esc(ob.habit||'健身')}" maxlength="8"></div>`;
     label='開始';
   }
-  return `${top}<div class="ob-body">${body}</div>
-    <div class="ob-foot"><button class="btn fill wide" id="obNext" data-act="${st<OB_STEPS?'obnext':'onboard'}" ${can?'':'disabled'}>${label}</button></div>`;
+  const auto=st>=3&&st<OB_STEPS;   // 說中你 → 換個方式 → 示範：自己往下播，點一下可以快轉
+  return `${top}<div class="ob-body${auto?' auto':''}" ${auto?'data-act="obtap"':''}>${body}</div>
+    ${st===OB_STEPS?`<div class="ob-foot"><button class="btn fill wide" id="obNext" data-act="onboard">開始</button></div>`:'<div class="ob-foot"></div>'}`;
 }
 /* 示範用的小畫面：只是畫出來的，不是真的資料 */
 function obMock(kind){
@@ -533,7 +535,7 @@ function mountOnb(){
   if(ob.step===3){
     const pile=$('#obPile'); if(!pile) return;
     const W=pile.clientWidth||390, H=pile.clientHeight||360, N=reduce?14:26;
-    const done=()=>{ const t=$('#obToast'); if(t) t.classList.add('on'); ob.ready=true; const b=$('#obNext'); if(b) b.disabled=false };
+    const done=()=>{ const t=$('#obToast'); if(t) t.classList.add('on'); ob.ready=true; T(()=>obGo(4),reduce?2600:2000) };
     if(ob.ready){ for(let i=0;i<N;i++) pile.appendChild(obPh(i,W,H,false)); done(); return }
     for(let i=0;i<N;i++){
       const el=obPh(i,W,H,!reduce); pile.appendChild(el);
@@ -543,6 +545,7 @@ function mountOnb(){
   }else if(ob.step===4){
     let left=119; const tick=()=>{ const e=$('#obCd'); if(!e) return; left=left<=0?119:left-1; e.textContent=`${Math.floor(left/60)}:${pad(left%60)}` };
     obTimers.push(setInterval(tick,1000));
+    T(()=>obGo(5),4200);
   }else if(ob.step===5){
     const scr=$('#obDemo'), cap=$('#obCap'); if(!scr) return;
     const scenes=[
@@ -552,10 +555,11 @@ function mountOnb(){
       ['strip','一週，變成一條拍貼',s=>{ scr.querySelectorAll('.strip i').forEach((f,i)=>T(()=>f.classList.add('f'),300+i*450)) }],
       ['obs','顯影偶爾說一句，它看見的',s=>{ const txt='這兩週你拍的地方，多半在傍晚，而且都有同一個人。'; txt.split('').forEach((ch,i)=>T(()=>{ const p=$('#mkObs'); if(p) p.textContent+=ch },300+i*70)) }],
     ];
-    let k=0;
-    const show=()=>{ if(!$('#obDemo')) return; const [kind,c,run]=scenes[k%scenes.length];
-      scr.innerHTML=obMock(kind); if(cap) cap.textContent=c; run(); k++; T(show,3200) };
-    show();
+    /* 四個畫面各播一次，播完自己到習慣頁；點一下跳下一個畫面 */
+    const show=()=>{ if(!$('#obDemo')) return; obClear();
+      if(ob.scene>=scenes.length){ ob.scene=0; obGo(OB_STEPS); return }
+      const [kind,c,run]=scenes[ob.scene]; scr.innerHTML=obMock(kind); if(cap) cap.textContent=c; run(); ob.scene++; T(show,3000) };
+    ob.next=show; ob.scene=0; show();
   }
 }
 function obPh(i,W,H,anim){
@@ -567,7 +571,7 @@ function obPh(i,W,H,anim){
   if(anim){ el.style.opacity='0'; el.style.transform=`translateY(-${H+80}px) rotate(${r*2}deg)` } else el.style.transform=to;
   return el;
 }
-function obGo(step){ obClear(); const ob=obState(); ob.step=Math.max(0,Math.min(OB_STEPS,step)); if(ob.step!==3) ob.ready=ob.ready&&ob.step>3; render({enter:true}) }
+function obGo(step){ obClear(); const ob=obState(); ob.picking=false; ob.step=Math.max(0,Math.min(OB_STEPS,step)); if(ob.step!==3) ob.ready=ob.ready&&ob.step>3; render({enter:true}) }
 function notices(){
   let out='';
   if(isAnon()&&bkOn()&&S.entries.length>=6&&!(S.settings&&S.settings.hintSeen)) out+=`<div class="notice">想換手機也拿得回照片，可以綁定 email。<br><button class="btn" data-act="bkhint" data-go="1">去綁定</button> <button class="link" data-act="bkhint" style="margin-left:8px">先不要</button></div>`;
@@ -1557,8 +1561,11 @@ document.addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-act]'); if(!a) return;
   const d=a.dataset;
   switch(d.act){
-    case 'obpick':{ const ob=obState(); ob.a[d.k]=d.v; document.querySelectorAll(`.ob-opt[data-k="${d.k}"]`).forEach(b=>b.classList.toggle('on',b===a)); $('#obNext').disabled=false; break }
-    case 'obnext':{ const ob=obState(); if(ob.step===3&&!ob.ready) break; if(ob.step===2) ob.ready=false; obGo(ob.step+1); break }
+    case 'obpick':{ const ob=obState(); if(ob.picking) break; ob.picking=true; ob.a[d.k]=d.v;
+      document.querySelectorAll(`.ob-opt[data-k="${d.k}"]`).forEach(b=>b.classList.toggle('on',b===a));
+      obClear(); obTimers.push(setTimeout(()=>{ ob.picking=false; if(ob.step===2) ob.ready=false; obGo(ob.step+1) },380)); break }
+    case 'obtap':{ const ob=obState();   // 點畫面快轉
+      if(ob.step===3){ if(ob.ready) obGo(4) } else if(ob.step===4) obGo(5); else if(ob.step===5&&ob.next) ob.next(); break }
     case 'obback':{ const ob=obState(); if(ob.step===OB_STEPS){ const h=$('#habit'); if(h) ob.habit=h.value } if(ob.step===4) ob.ready=true; obGo(ob.step-1); break }
     case 'obskip':{ const ob=obState(); ob.skipped=ob.step; obGo(OB_STEPS); break }
     case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身', ob=obState();
@@ -1659,7 +1666,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v20';
+const APP_VER='v21';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
