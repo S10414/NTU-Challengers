@@ -265,6 +265,63 @@
   .onb label{display:block;margin:38px 0 8px;font-size:13px;color:var(--ink-2)}
   .onb input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);padding:10px 0;font-family:var(--serif);font-size:20px;margin-bottom:34px}
 
+  /* ---------- 第一次打開：三題 → 說中你 → 換個方式 → 示範 → 習慣 ---------- */
+  #view.v-onb{display:flex;flex-direction:column;min-height:100dvh;padding:0 22px}
+  .ob-top{display:flex;align-items:center;gap:14px;padding:max(18px,env(safe-area-inset-top)) 0 8px}
+  .ob-top .back{width:34px;height:34px;border-radius:50%;border:0;background:var(--glass);font-size:17px;color:var(--ink);flex:none}
+  .ob-top .back[hidden]{visibility:hidden;display:block}
+  .ob-bar{flex:1;height:4px;border-radius:2px;background:rgba(43,33,28,.10);overflow:hidden}
+  .ob-bar i{display:block;height:100%;background:var(--ink);border-radius:2px;transition:width .45s cubic-bezier(.2,.7,.2,1)}
+  .ob-top .skip{border:0;background:none;font-size:14px;color:var(--ink-2);padding:6px 0;flex:none}
+  .ob-body{flex:1;display:flex;flex-direction:column;padding-top:18px}
+  .ob-body h2{font-family:var(--serif);font-size:25px;line-height:1.45;font-weight:600;margin:0 0 6px}
+  .ob-body .sub{font-size:14px;color:var(--ink-2);margin:0 0 22px;line-height:1.7}
+  .ob-opts{display:flex;flex-direction:column;gap:10px}
+  .ob-opt{-webkit-tap-highlight-color:transparent;outline:none;display:block;width:100%;text-align:left;padding:17px 18px;border-radius:14px;border:1.5px solid transparent;background:var(--glass);font-size:16px;color:var(--ink);box-shadow:0 1px 0 rgba(43,33,28,.05);transition:border-color .2s,background .2s,transform .12s}
+  .ob-opt:active{transform:scale(.985)}
+  .ob-opt.on{border-color:var(--ink);background:var(--paper)}
+  .ob-foot{padding:16px 0 max(22px,env(safe-area-inset-bottom))}
+  .ob-foot .btn{border-radius:999px;padding:16px;font-size:16px}
+  .ob-foot .btn:disabled{opacity:.3}
+  .ob-pile{position:relative;flex:1;min-height:340px;margin:8px -22px 0;overflow:hidden}
+  .ob-pile .ph{position:absolute;width:118px;height:150px;background:var(--paper);padding:7px 7px 22px;box-shadow:0 6px 18px rgba(43,33,28,.18);border-radius:2px}
+  .ob-pile .ph i{display:block;width:100%;height:100%}
+  .ob-toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.9);opacity:0;background:var(--paper);padding:11px 20px;border-radius:999px;font-size:15px;box-shadow:0 8px 24px rgba(43,33,28,.2);white-space:nowrap;z-index:50;transition:opacity .35s,transform .35s cubic-bezier(.2,.9,.3,1.3)}
+  .ob-toast.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .ob-phone{position:relative;width:236px;aspect-ratio:9/19;margin:6px auto 0;border-radius:36px;background:#1B1512;padding:9px;box-shadow:0 18px 40px rgba(43,33,28,.25)}
+  .ob-phone .scr{position:relative;width:100%;height:100%;border-radius:28px;overflow:hidden;background:var(--dusk)}
+  .ob-phone .scr::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:62px;height:18px;border-radius:10px;background:#1B1512;z-index:5}
+  .mk{position:absolute;inset:0;padding:36px 14px 0;font-size:10px;transition:opacity .45s}
+  .mk .hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .mk .hd b{font-family:var(--word);font-size:15px}
+  .mk .hd span{font-size:8px;color:var(--ink-2)}
+  .mk .now{background:#D9917E;color:#FFF8F2;border-radius:6px;padding:14px 12px;margin-bottom:9px}
+  .mk .now b{display:block;font-family:var(--serif);font-size:22px;line-height:1.2}
+  .mk .now span{font-size:9px;opacity:.85}
+  .mk .now em{float:right;font-style:normal;font-size:10px;font-variant-numeric:tabular-nums;margin-top:-26px}
+  .mk .row{display:flex;gap:8px;align-items:center;background:var(--glass);border-radius:5px;padding:7px;margin-bottom:6px}
+  .mk .row i{width:30px;height:38px;flex:none;border:2px solid var(--paper)}
+  .mk .row b{display:block;font-size:10px;font-weight:500}
+  .mk .row span{font-size:8px;color:var(--ink-2)}
+  .mk.cam{background:#0F0C0B;padding:30px 0 0}
+  .mk.cam .vf{margin:16px 0 0;aspect-ratio:3/4;background:linear-gradient(180deg,#EBC4B8 0%,#F3D6CA 45%,#C9A58C 46%,#8C6F5C 100%);position:relative}
+  .mk.cam .vf::after{content:"";position:absolute;inset:0;background:#fff;opacity:0}
+  .mk.cam.flash .vf::after{animation:obflash .5s}
+  .mk.cam .sh{width:40px;height:40px;border-radius:50%;background:#fff;border:3px solid #0F0C0B;box-shadow:0 0 0 2px #fff;margin:16px auto 0}
+  @keyframes obflash{0%{opacity:.9}100%{opacity:0}}
+  .mk .pv{width:62%;aspect-ratio:3/4;margin:0 auto 12px;background:linear-gradient(180deg,#EBC4B8 0%,#F3D6CA 45%,#C9A58C 46%,#8C6F5C 100%);border:4px solid var(--paper);box-shadow:0 4px 10px rgba(43,33,28,.15)}
+  .mk .chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+  .mk .chips span{border:1px solid var(--line);border-radius:999px;padding:4px 9px;font-size:9px;transition:background .3s,color .3s}
+  .mk .chips span.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .mk .ln{margin:12px 6px 0;border-bottom:1px solid var(--ink-3);padding:4px 0;font-family:var(--serif);font-size:10px;min-height:14px}
+  .mk .strip{width:46%;margin:6px auto 0;background:var(--paper);padding:6px 6px 16px;box-shadow:0 6px 14px rgba(43,33,28,.15)}
+  .mk .strip i{display:block;aspect-ratio:4/3;margin-bottom:4px;background:#F3DDD0;transition:opacity .4s,transform .4s;opacity:.35}
+  .mk .strip i.f{opacity:1}
+  .mk .obs{background:var(--paper);border-radius:4px;padding:12px;margin-top:40px;box-shadow:0 4px 12px rgba(43,33,28,.12)}
+  .mk .obs small{display:block;font-size:8px;color:var(--ink-2);margin-bottom:6px}
+  .mk .obs p{font-family:var(--serif);font-size:12px;line-height:1.7;margin:0;min-height:60px}
+  .ob-cap{text-align:center;font-family:var(--serif);font-size:17px;margin:16px 0 0;min-height:26px;transition:opacity .3s}
+  .ob-habit input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);padding:10px 0;font-family:var(--serif);font-size:22px;margin-top:18px}
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -396,7 +453,8 @@ function render(o){
   o=o||{};
   $('#hdate').textContent=fmtDate(new Date());
   $('header.top h1').style.visibility=S.settings?'':'hidden';   // 開場頁已經有大字標，不重複
-  if(!S.settings){ $('#tabs').style.display='none'; $('#view').innerHTML=viewOnboard(); if(o.enter) fx.enter($('#view')); skySync(); return; }
+  if(!S.settings){ $('#tabs').style.display='none'; $('header.top').style.display='none'; $('#view').className='v-onb'; $('#view').innerHTML=viewOnboard(); mountOnb(); if(o.enter) fx.enter($('#view')); skySync(); return; }
+  $('header.top').style.display='';
   if(!consent()||S.consentRead){ $('#tabs').style.display=S.consentRead?'':'none'; $('#view').className='v-consent'; $('#view').innerHTML=viewConsent(!!S.consentRead&&!!consent()); if(o.enter) fx.enter($('#view')); skySync(); return }
   $('#tabs').style.display='';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
@@ -413,17 +471,103 @@ function render(o){
   skySync();
   lastBanner=bannerSig();
 }
+/* ---------- 第一次打開 ----------
+   三題（也是研究的前測）→ 說中你 → 換個方式 → 示範 → 習慣。答案先存在本機（S.settings.intake），
+   只有同意「參與研究」的人，syncStudy 才會上傳到 intake 表。 */
+const OB_Q=[
+  {k:'q1',t:'你平常怎麼留下生活？',s:'選最像你的一個。',o:[['hoard','拍很多，但很少回看'],['post','發限動或貼文'],['write','寫日記或備忘錄'],['none','沒有特別記錄']]},
+  {k:'q2',t:'發東西之前，你會想別人怎麼看嗎？',s:'',o:[['often','常常'],['some','有時候'],['rare','很少'],['nopost','我很少發東西']]},
+  {k:'q3',t:'多久會回頭看以前的照片？',s:'',o:[['daily','幾乎每天'],['sometimes','偶爾想到才看'],['rare','很少'],['never','幾乎不看']]},
+];
+const OB_MIRROR={hoard:'相簿裡幾千張，<br>真正回頭看的沒幾張',post:'留下來的，<br>多半是想給別人看的那一面',write:'字留下來了，<br>那天的樣子沒有',none:'日子一天天過，<br>回想起來都差不多'};
+const OB_STEPS=6;   // 0-2 三題、3 說中你、4 換個方式、5 示範、6 習慣
+const OB_PAL=[['#EBC4B8','#F3D6CA'],['#D9917E','#F3D6CA'],['#C9A58C','#FAF1E6'],['#B9A3B8','#F3D6CA'],['#8C6F5C','#D9B8A0'],['#E7B9A0','#FCF7EF'],['#A7B2A0','#F3DDD0'],['#D3A5A0','#F7E6DA']];
+let obTimers=[];
+function obClear(){ obTimers.forEach(t=>{clearTimeout(t);clearInterval(t)}); obTimers=[] }
+function obState(){ if(!S.onb) S.onb={step:0,a:{},ready:false}; return S.onb }
 function viewOnboard(){
-  return `<div class="onb">
-    <h1>Revela</h1>
-    <p>每天一個隨機的時刻，拍下現在。</p>
-    <p>沒有讚，沒有追蹤，沒有連續天數。別人看不到你的紀錄。</p>
-    <p>它會慢慢看，只在看見什麼的時候才說話。</p>
-    <label for="habit">除了日常，你想記的一個習慣</label>
-    <input id="habit" value="健身" maxlength="8">
-    <button class="btn fill wide" data-act="onboard">開始</button>
-  </div>`;
+  const ob=obState(), st=ob.step, pct=Math.round(st/OB_STEPS*100);
+  const top=`<div class="ob-top"><button class="back" data-act="obback" aria-label="上一步" ${st?'':'hidden'}>‹</button>
+    <div class="ob-bar"><i style="width:${Math.max(4,pct)}%"></i></div>
+    ${st<OB_STEPS?'<button class="skip" data-act="obskip">跳過</button>':'<span class="skip" style="visibility:hidden">跳過</span>'}</div>`;
+  let body='', can=true, label='繼續';
+  if(st<3){
+    const q=OB_Q[st], v=ob.a[q.k];
+    body=`<h2>${q.t}</h2>${q.s?`<p class="sub">${q.s}</p>`:'<p class="sub"></p>'}
+      <div class="ob-opts">${q.o.map(([k,t])=>`<button class="ob-opt ${v===k?'on':''}" data-act="obpick" data-k="${q.k}" data-v="${k}">${t}</button>`).join('')}</div>`;
+    can=!!v;
+  }else if(st===3){
+    body=`<h2>${OB_MIRROR[ob.a.q1]||OB_MIRROR.hoard}</h2><div class="ob-pile" id="obPile"><div class="ob-toast" id="obToast">不只你這樣</div></div>`;
+    can=ob.ready;
+  }else if(st===4){
+    body=`<h2>換個方式</h2><p class="sub">每天一個隨機的時刻。兩分鐘，留下一張。</p>
+      <div class="ob-phone"><div class="scr">${obMock('today')}</div></div>`;
+  }else if(st===5){
+    body=`<h2>就這樣用</h2><p class="sub">沒有讚，沒有追蹤。別人看不到你的紀錄。</p>
+      <div class="ob-phone"><div class="scr" id="obDemo">${obMock('cam')}</div></div><p class="ob-cap" id="obCap"></p>`;
+  }else{
+    body=`<div class="ob-habit"><h2>除了日常，<br>你還想記哪一個習慣？</h2><p class="sub">會變成拍貼的第四格。之後可以在設定裡改。</p>
+      <input id="habit" value="${esc(ob.habit||'健身')}" maxlength="8"></div>`;
+    label='開始';
+  }
+  return `${top}<div class="ob-body">${body}</div>
+    <div class="ob-foot"><button class="btn fill wide" id="obNext" data-act="${st<OB_STEPS?'obnext':'onboard'}" ${can?'':'disabled'}>${label}</button></div>`;
 }
+/* 示範用的小畫面：只是畫出來的，不是真的資料 */
+function obMock(kind){
+  if(kind==='today') return `<div class="mk"><div class="hd"><b>Revela</b><span>今天</span></div>
+    <div class="now"><b>現在</b><span>留下此刻</span><em id="obCd">1:59</em></div>
+    <div class="row"><i style="background:linear-gradient(#EBC4B8,#C9A58C)"></i><div><b>午後的窗邊</b><span>14:20 · 所在之處</span></div></div>
+    <div class="row"><i style="background:linear-gradient(#B9A3B8,#F3D6CA)"></i><div><b>一起排隊的人</b><span>12:05 · 身邊的人</span></div></div></div>`;
+  if(kind==='cam') return `<div class="mk cam" id="mkCam"><div class="vf"></div><div class="sh"></div></div>`;
+  if(kind==='form') return `<div class="mk" style="padding-top:44px"><div class="pv"></div>
+    <div class="chips"><span data-t="1">日常</span><span data-t="2">身邊的人</span><span data-t="3">所在之處</span><span data-t="4">健身</span></div><div class="ln" id="mkLn"></div></div>`;
+  if(kind==='strip') return `<div class="mk" style="padding-top:40px"><div class="hd"><b>這週</b><span>11/16 – 11/22</span></div>
+    <div class="strip">${[0,1,2,3].map(i=>`<i style="background:linear-gradient(${OB_PAL[i*2][0]},${OB_PAL[i*2][1]})"></i>`).join('')}</div></div>`;
+  return `<div class="mk" style="padding-top:44px"><div class="hd"><b>顯影</b><span></span></div>
+    <div class="obs"><small>看了你兩週的紀錄</small><p id="mkObs"></p></div></div>`;
+}
+function mountOnb(){
+  obClear(); const ob=obState(), reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const T=(f,ms)=>obTimers.push(setTimeout(f,ms));
+  if(ob.step===3){
+    const pile=$('#obPile'); if(!pile) return;
+    const W=pile.clientWidth||390, H=pile.clientHeight||360, N=reduce?14:26;
+    const done=()=>{ const t=$('#obToast'); if(t) t.classList.add('on'); ob.ready=true; const b=$('#obNext'); if(b) b.disabled=false };
+    if(ob.ready){ for(let i=0;i<N;i++) pile.appendChild(obPh(i,W,H,false)); done(); return }
+    for(let i=0;i<N;i++){
+      const el=obPh(i,W,H,!reduce); pile.appendChild(el);
+      if(!reduce) T(()=>{ el.style.transition='transform .55s cubic-bezier(.2,.8,.25,1.05),opacity .25s'; el.style.opacity='1'; el.style.transform=el.dataset.to },90+i*70);
+    }
+    T(done,reduce?200:90+N*70+500);
+  }else if(ob.step===4){
+    let left=119; const tick=()=>{ const e=$('#obCd'); if(!e) return; left=left<=0?119:left-1; e.textContent=`${Math.floor(left/60)}:${pad(left%60)}` };
+    obTimers.push(setInterval(tick,1000));
+  }else if(ob.step===5){
+    const scr=$('#obDemo'), cap=$('#obCap'); if(!scr) return;
+    const scenes=[
+      ['cam','時刻一到，打開就拍',s=>{ T(()=>{ const c=$('#mkCam'); if(c) c.classList.add('flash') },1100) }],
+      ['form','選一個主題，想寫一句也可以',s=>{ T(()=>{ const c=scr.querySelector('[data-t="2"]'); if(c) c.classList.add('on') },600);
+        const txt='傍晚一起回家', ln=()=>$('#mkLn'); txt.split('').forEach((ch,i)=>T(()=>{ const l=ln(); if(l) l.textContent+=ch },1100+i*120)) }],
+      ['strip','一週，變成一條拍貼',s=>{ scr.querySelectorAll('.strip i').forEach((f,i)=>T(()=>f.classList.add('f'),300+i*450)) }],
+      ['obs','顯影偶爾說一句，它看見的',s=>{ const txt='這兩週你拍的地方，多半在傍晚，而且都有同一個人。'; txt.split('').forEach((ch,i)=>T(()=>{ const p=$('#mkObs'); if(p) p.textContent+=ch },300+i*70)) }],
+    ];
+    let k=0;
+    const show=()=>{ if(!$('#obDemo')) return; const [kind,c,run]=scenes[k%scenes.length];
+      scr.innerHTML=obMock(kind); if(cap) cap.textContent=c; run(); k++; T(show,3200) };
+    show();
+  }
+}
+function obPh(i,W,H,anim){
+  const p=OB_PAL[i%OB_PAL.length], el=document.createElement('div'); el.className='ph';
+  const x=Math.round((i*97)%Math.max(1,W-90)-14+((i*13)%23)), y=Math.round(((i*61)%Math.max(1,H-120))-10), r=((i*37)%44)-22;
+  el.style.left=x+'px'; el.style.top=y+'px'; el.style.zIndex=i;
+  el.innerHTML=`<i style="background:linear-gradient(${150+(i*23)%60}deg,${p[0]},${p[1]})"></i>`;
+  const to=`rotate(${r}deg)`; el.dataset.to=to;
+  if(anim){ el.style.opacity='0'; el.style.transform=`translateY(-${H+80}px) rotate(${r*2}deg)` } else el.style.transform=to;
+  return el;
+}
+function obGo(step){ obClear(); const ob=obState(); ob.step=Math.max(0,Math.min(OB_STEPS,step)); if(ob.step!==3) ob.ready=ob.ready&&ob.step>3; render({enter:true}) }
 function notices(){
   let out='';
   if(isAnon()&&bkOn()&&S.entries.length>=6&&!(S.settings&&S.settings.hintSeen)) out+=`<div class="notice">想換手機也拿得回照片，可以綁定 email。<br><button class="btn" data-act="bkhint" data-go="1">去綁定</button> <button class="link" data-act="bkhint" style="margin-left:8px">先不要</button></div>`;
@@ -1079,6 +1223,11 @@ async function syncStudy(){
       const {error}=await SB.client.from('consents').insert({user_id:uid,version:c.v,backup:!!c.backup,ai:!!c.ai,research:!!c.research});
       if(!error) await saveSettings({consent:Object.assign({},c,{syncedUid:uid})}); else console.error('consent',error);
     }
+    const ik=S.settings.intake;
+    if(ik&&researchOn()&&ik.syncedUid!==uid){
+      const {error}=await SB.client.from('intake').insert({user_id:uid,version:'v'+ik.v,q1:ik.q1,q2:ik.q2,q3:ik.q3,skipped_at:ik.skippedAt,answered_at:new Date(ik.ts).toISOString()});
+      if(!error||error.code==='23505') await saveSettings({intake:Object.assign({},ik,{syncedUid:uid})}); else console.error('intake',error);
+    }
     if(S.settings.pendingCode){ await redeemCode(S.settings.pendingCode,true) }
     const {data,error}=await SB.client.from('participants').select('ai_from').eq('user_id',uid).maybeSingle();
     if(!error){
@@ -1135,7 +1284,7 @@ const CS={
   store:`<p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>`,
   ai:`<p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。種子測試期間，要有邀請碼才會開始。</p>`,
   research:`<p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
-    <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li></ul>
+    <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li><li>第一次打開時回答的三個問題</li></ul>
     <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。不勾也能正常使用。</p>`,
   people:`<p>「身邊的人」可能會拍到別人。拍之前先問過對方，或避開正臉。這些照片也可能被送給顯影看。</p>`,
   change:`<p>這三個選項之後都能在設定裡改。你也可以在設定裡刪除帳號：手機和雲端上的照片、紀錄、顯影的觀察，以及帳號本身都會刪掉。</p>`,
@@ -1408,7 +1557,13 @@ document.addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-act]'); if(!a) return;
   const d=a.dataset;
   switch(d.act){
-    case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身'; S.settings={habit:h,since:dkey(new Date())}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
+    case 'obpick':{ const ob=obState(); ob.a[d.k]=d.v; document.querySelectorAll(`.ob-opt[data-k="${d.k}"]`).forEach(b=>b.classList.toggle('on',b===a)); $('#obNext').disabled=false; break }
+    case 'obnext':{ const ob=obState(); if(ob.step===3&&!ob.ready) break; if(ob.step===2) ob.ready=false; obGo(ob.step+1); break }
+    case 'obback':{ const ob=obState(); if(ob.step===OB_STEPS){ const h=$('#habit'); if(h) ob.habit=h.value } if(ob.step===4) ob.ready=true; obGo(ob.step-1); break }
+    case 'obskip':{ const ob=obState(); ob.skipped=ob.step; obGo(OB_STEPS); break }
+    case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身', ob=obState();
+      const intake={v:1,q1:ob.a.q1||null,q2:ob.a.q2||null,q3:ob.a.q3||null,skippedAt:ob.skipped==null?null:ob.skipped,ts:Date.now(),syncedUid:null};
+      obClear(); S.onb=null; S.settings={habit:h,since:dkey(new Date()),intake}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
     case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
@@ -1504,7 +1659,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v19';
+const APP_VER='v20';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });

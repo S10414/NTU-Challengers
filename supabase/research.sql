@@ -105,3 +105,26 @@ select substr(md5('revela-salt-115-1:' || e.user_id::text), 1, 10) as pid,
 from public.entries e
 where (select c.research from public.consents c where c.user_id = e.user_id order by c.created_at desc limit 1);
 revoke all on all tables in schema research from public, anon, authenticated;
+
+-- v20：第一次打開時的三題（研究前測）。只有同意研究的人，前端才會上傳；一個帳號一筆，使用者只能新增自己的
+create table if not exists public.intake (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  version text not null default 'v1',
+  q1 text, q2 text, q3 text,
+  skipped_at int,                       -- 在第幾步按了「跳過」；null = 沒跳過
+  answered_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table public.intake enable row level security;
+drop policy if exists "intake: insert own" on public.intake;
+create policy "intake: insert own" on public.intake for insert to authenticated with check (user_id = (select auth.uid()));
+drop policy if exists "intake: read own" on public.intake;
+create policy "intake: read own" on public.intake for select to authenticated using (user_id = (select auth.uid()));
+revoke update, delete, truncate on public.intake from anon, authenticated;
+
+create or replace view research.intake as
+select substr(md5('revela-salt-115-1:' || i.user_id::text), 1, 10) as pid,
+       i.version, i.q1, i.q2, i.q3, i.skipped_at, i.answered_at
+from public.intake i
+where (select c.research from public.consents c where c.user_id = i.user_id order by c.created_at desc limit 1);
+revoke all on all tables in schema research from public, anon, authenticated;

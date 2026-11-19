@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       if (re) return J({ error: "storage_remove" }, 500);
     }
     // 2) 資料表
-    for (const t of ["entries", "observations", "consents", "participants", "observe_usage"]) {
+    for (const t of ["entries", "observations", "consents", "participants", "observe_usage", "intake"]) {
       const { error } = await admin.from(t).delete().eq("user_id", uid);
       if (error) return J({ error: "delete_" + t }, 500);
     }
