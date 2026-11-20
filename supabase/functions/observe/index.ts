@@ -86,15 +86,24 @@ Deno.serve(async (req) => {
   // 6) 呼叫 Anthropic
   const content: unknown[] = images.map((d: string) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: d } }));
   content.push({ type: "text", text });
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 800, system: systemPrompt(habit), messages: [{ role: "user", content }] }),
-  });
-  const out = await r.json();
-  if (!r.ok) { console.error("anthropic", r.status, JSON.stringify(out).slice(0, 300)); return J({ error: "upstream", status: r.status }, 502); }
+  // 失敗（餘額不足、服務出錯、輸出壞掉）不算進每日次數
+  const refund = () => admin.rpc("observe_refund", { p_user: u.user.id });
+  let r: Response, out: any;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: MODEL, max_tokens: 800, system: systemPrompt(habit), messages: [{ role: "user", content }] }),
+    });
+    out = await r.json();
+  } catch (e) { console.error("anthropic fetch", e); await refund(); return J({ error: "upstream", status: 0 }, 502); }
+  if (!r.ok) {
+    console.error("anthropic", r.status, JSON.stringify(out).slice(0, 300)); await refund();
+    const billing = /credit balance/i.test(String(out?.error?.message || ""));
+    return J({ error: billing ? "billing" : "upstream", status: r.status }, 502);
+  }
   const t = (out.content || []).map((c: any) => c.type === "text" ? c.text : "").join("").replace(/```json|```/g, "").trim();
-  let p: any; try { p = JSON.parse(t); } catch { return J({ error: "bad_model_output" }, 502); }
+  let p: any; try { p = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)); } catch { await refund(); return J({ error: "bad_model_output" }, 502); }
   const res = { speak: !!(p.speak && p.text), mode: p.mode === "ask" ? "ask" : "say", text: String(p.text || "").slice(0, 400), why: String(p.why || "").slice(0, 400) };
 
   // 7) 觀察紀錄（含沉默）：只有同意研究的人才寫

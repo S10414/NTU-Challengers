@@ -1738,6 +1738,7 @@ async function runAgent(){
     if(res.status===429){ S.err='今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
     if(res.status===403){ S.err=out.error==='no_consent'?'顯影的同意紀錄還沒傳上去，等一下再試。':'顯影還沒對這個帳號開放。'; S.busy=false; syncStudy(); render(); return }
     if(out.skipped){ S.agentMeta=Object.assign({},S.agentMeta,{lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:false}); await kvSet('agentMeta',S.agentMeta); S.busy=false; render(); return }
+    if(out.error==='billing'){ S.err='顯影暫停中：後台的額度用完了，團隊補上後就會恢復。'; S.busy=false; render(); return }
     if(!res.ok||out.error) throw new Error(out.error||('http '+res.status));
     S.agentMeta={lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:!!(out.speak&&out.text)};
     if(out.speak&&out.text){ S.freshId=String(Date.now()); S.agentLog.push({id:S.freshId,ts:Date.now(),mode:out.mode||'say',text:String(out.text).trim(),reaction:null,reply:'',obsId:out.obs_id||null}); await kvSet('agentLog',S.agentLog) }
@@ -1887,7 +1888,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v23';
+const APP_VER='v24';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });

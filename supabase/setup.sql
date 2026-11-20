@@ -77,3 +77,13 @@ create policy "photos: insert own" on storage.objects for insert to authenticate
 
 -- 選用：定期清掉 30 天前建立、一直沒綁 email 的匿名帳號（相關資料會一併消失）
 -- delete from auth.users where is_anonymous is true and created_at < now() - interval '30 days';
+
+-- v24：呼叫 Anthropic 失敗（餘額不足、服務出錯）時退回一次，不算進每日額度
+create or replace function public.observe_refund(p_user uuid) returns void
+language plpgsql set search_path = '' as $$
+begin
+  update public.observe_usage set n = greatest(n - 1, 0)
+  where user_id = p_user and day = (now() at time zone 'Asia/Taipei')::date;
+end; $$;
+revoke execute on function public.observe_refund(uuid) from public, anon, authenticated;
+grant execute on function public.observe_refund(uuid) to service_role;
