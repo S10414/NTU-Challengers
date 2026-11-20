@@ -323,6 +323,59 @@
   .mk .obs p{font-family:var(--serif);font-size:12px;line-height:1.7;margin:0;min-height:60px}
   .ob-cap{text-align:center;font-family:var(--serif);font-size:17px;margin:16px 0 0;min-height:26px;transition:opacity .3s}
   .ob-habit input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);padding:10px 0;font-family:var(--serif);font-size:22px;margin-top:18px}
+  /* 習慣節奏 */
+  .habit .hrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .habit .hrow b{font-family:var(--serif);font-size:17px;font-weight:600;margin-right:10px}
+  .habit .hprog{font-size:13px;color:var(--ink-2);white-space:nowrap}
+  .hdots{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+  .hdots i{width:8px;height:8px;border-radius:50%;border:1px solid var(--ink-2)}
+  .hdots i.on{background:var(--ink);border-color:var(--ink)}
+  .habit .hadd{flex:none;padding:9px 13px;font-size:14px;border-radius:999px}
+  .habit .hmsg{font-family:var(--serif);font-size:15px;margin:12px 0 0;line-height:1.7}
+  .habit .hmsg .hd{font-family:var(--sans);font-size:12px;color:var(--ink-3);margin-left:6px}
+  .habit .hsaid{font-size:14px;color:var(--ink-2);margin:4px 0 0}
+  .habit .hline{margin-top:8px}
+  .habit .hline input{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:9px 10px;font-size:14px}
+  .habit .hline .btn{flex:none;padding:9px 13px}
+  .htiles{display:flex;gap:8px;margin-top:10px;overflow-x:auto}
+  .htile{flex:none;width:76px;height:96px;background:var(--paper);border:3px solid #fff;box-shadow:0 1px 4px rgba(43,33,28,.15);position:relative;padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .htile img{width:100%;height:100%;object-fit:cover}
+  .htile span{font-family:var(--serif);font-size:11px;line-height:1.4;padding:6px;color:var(--ink-2)}
+  .htile em{position:absolute;left:4px;bottom:2px;font-style:normal;font-size:10px;color:var(--ink);background:rgba(252,247,239,.8);padding:0 3px}
+  .habit .hrecap{display:block;margin-top:12px;font-size:13px;text-align:left}
+  .row2{display:flex;gap:8px;align-items:center}
+  .ov.sheet3{background:var(--dusk)}
+  .ov.sheet3 h2{font-family:var(--serif);font-size:21px;font-weight:600;margin:0}
+  .ov.sheet3 .grp{margin-top:24px}
+  .ov.sheet3 .grp h3{font-size:14px;color:var(--ink-2);font-weight:600;margin:0 0 8px}
+  .hcmps{display:flex;gap:10px;margin-top:20px}
+  .hcmp{flex:1;background:var(--paper);padding:10px;box-shadow:0 2px 8px rgba(43,33,28,.12)}
+  .hcmp small{display:block;font-size:11px;color:var(--ink-2);margin-bottom:6px}
+  .hcmp img{width:100%;aspect-ratio:3/4;object-fit:cover;margin-bottom:6px}
+  .hcmp p{font-family:var(--serif);font-size:14px;line-height:1.6;margin:0}
+  .hwk{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .hwk span{width:84px;color:var(--ink-2)}
+  .hwk b{margin-left:auto;font-weight:500}
+  .hsay{display:block;width:100%;text-align:left;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:none;font-family:var(--serif);font-size:15px;line-height:1.6;color:var(--ink)}
+  .hsay em{font-style:normal;font-family:var(--sans);font-size:12px;color:var(--ink-3);margin-right:10px}
+  /* 一句話交換 */
+  .ov.peerov{background:var(--dusk)}
+  .pq{padding-top:10px}
+  .pq h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:0 0 6px;line-height:1.45}
+  .pq .sub{font-size:14px;color:var(--ink-2);margin:0 0 20px;line-height:1.7}
+  .pq .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .pnote{width:100%;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--serif);font-size:16px;line-height:1.7;resize:none}
+  .pwarn{font-size:13px;color:var(--ink-2);margin:10px 0 18px}
+  .pwarn.err{color:#8E3B27;margin-top:-8px}
+  .pcare{font-size:14px;line-height:1.7;background:var(--paper);padding:12px 14px;border-radius:8px;margin:14px 0 0}
+  .peer .phead{font-size:13px;color:var(--ink-2);margin:0 0 8px}
+  .peer .ptext{font-family:var(--serif);font-size:17px;line-height:1.75;margin:0 0 10px}
+  .peer .pstat{font-size:12px;color:var(--ink-3);margin:0 0 10px}
+  .peer .fb{display:flex;gap:8px;flex-wrap:wrap}
+  .peer .fb .btn{padding:8px 12px;font-size:13px}
+  .peer.done .ptext{margin-bottom:4px}
+  .pwait{margin:4px 0 14px}
+  .pask{display:block;margin:0 0 14px;font-size:14px}
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -339,6 +392,8 @@
   </nav>
 </div>
 <div class="ov cap" id="ovCap" data-lenis-prevent><div class="in" id="capBody"></div></div>
+<div class="ov sheet3" id="ovHabit" data-lenis-prevent></div>
+<div class="ov peerov" id="ovPeer" data-lenis-prevent></div>
 <div class="ov dark" id="ovEntry" data-lenis-prevent></div>
 <div class="ov slide" id="ovSlide" data-lenis-prevent></div>
 <div class="ov full" id="ovFull" data-lenis-prevent></div>
@@ -414,6 +469,7 @@ async function load(){
   S.entries=(await allEntries()).sort((a,b)=>a.ts-b.ts);
   S.agentLog=await kvGet('agentLog')||[];
   S.agentMeta=await kvGet('agentMeta')||{};
+  S.peer=await kvGet('peer')||null;
   await ensureMoment();
 }
 
@@ -508,7 +564,9 @@ function viewOnboard(){
       <div class="ob-phone"><div class="scr" id="obDemo">${obMock('cam')}</div></div><p class="ob-cap" id="obCap"></p>`;
   }else{
     body=`<div class="ob-habit"><h2>除了日常，<br>你還想記哪一個習慣？</h2><p class="sub">會變成拍貼的第四格。之後可以在設定裡改。</p>
-      <input id="habit" value="${esc(ob.habit||'健身')}" maxlength="8"></div>`;
+      <input id="habit" value="${esc(ob.habit||'健身')}" maxlength="8">
+      <p class="sub" style="margin:26px 0 10px">想給它一個節奏嗎？</p>
+      <div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${(ob.goal||0)===n?'on':''}" data-act="obgoal" data-n="${n}">${n?`每週 ${n} 次`:'隨手記'}</button>`).join('')}</div></div>`;
     label='開始';
   }
   const auto=st>=3&&st<OB_STEPS;   // 說中你 → 換個方式 → 示範：自己往下播，點一下可以快轉
@@ -589,11 +647,11 @@ function notices(){
 }
 function viewToday(){
   const today=dkey(new Date()), st=sunState();
-  const list=S.entries.filter(e=>e.date===today).slice().reverse();
+  const list=S.entries.filter(e=>e.date===today&&!(e.theme==='habit'&&!e.img)).slice().reverse();   // 只點一下的習慣打卡已經在習慣卡片裡
   const top=st==='now'
     ?`<button class="moment now" data-act="cap" data-theme="daily" data-moment="1"><p class="t">現在</p><div class="s">留下此刻</div></button>`
     :`<div class="row" style="margin:8px 0 22px"><button class="btn fill wide" data-act="cap">留下此刻</button></div>${st==='done'?'<p class="small muted" style="margin:-12px 0 18px">今天的時刻，留下了。</p>':''}`;
-  return `${notices()}${top}${list.map(entryRow).join('')}${agentSec()}`;
+  return `${notices()}${top}${peerSec()}${habitSec()}${list.map(entryRow).join('')}${agentSec()}`;
 }
 function entryRow(e){
   return `<div class="paper entry"><button data-act="open" data-id="${e.id}">
@@ -601,6 +659,145 @@ function entryRow(e){
     <div><p class="line">${e.line?esc(e.line):'<span class="muted">（沒有寫字）</span>'}</p>
     <div class="meta">${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 晚了一點':''}</div></div>
   </button></div>`;
+}
+/* ---------- 習慣節奏 ----------
+   S.settings.goal：每週幾次（0 = 隨手記）。一週從星期一算。打卡就是一則主題為「習慣」的紀錄（可以沒有照片和字）。 */
+const goalN=()=>Math.max(0,Math.min(7,Number(S.settings&&S.settings.goal)||0));
+const habitEs=()=>S.entries.filter(e=>e.theme==='habit');
+function weekKey(ts){ const d=new Date(ts); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return dkey(d) }
+function habitWeek(off){ const s=weekStart(off||0).getTime(), e=s+7*864e5; return habitEs().filter(x=>{ const t=parseD(x.date).getTime(); return t>=s&&t<e }) }
+function habitRecap(){
+  const es=habitEs(); if(!es.length) return null;
+  const first=parseD(es[0].date).getTime(); if(Date.now()-first<21*864e5) return null;   // 用了三週以上才回顧
+  const weeks=[0,-1,-2,-3].map(o=>habitWeek(o)), g=goalN();
+  return {weeks,total:weeks.reduce((a,w)=>a+w.length,0),hit:g?weeks.filter(w=>w.length>=g).length:null};
+}
+function dots(n,g){ let s=''; for(let i=0;i<g;i++) s+=`<i class="${i<n?'on':''}"></i>`; return `<span class="hdots">${s}</span>` }
+function hTile(e){ const d=parseD(e.date);
+  return `<button class="htile" data-act="open" data-id="${e.id}">${e.img?`<img src="${e.img}" alt="">`:`<span>${esc((e.line||'').slice(0,18))||'·'}</span>`}<em>${d.getMonth()+1}/${d.getDate()}</em></button>` }
+function habitSec(){
+  const name=themeName('habit'), g=goalN(), wk=habitWeek(0), n=wk.length;
+  const prog=g?`本週 ${Math.min(n,g)}/${g} ${dots(n,g)}`:`本週 ${n} 次`;
+  let msg='';
+  const just=S.hJust&&S.entries.find(e=>e.id===S.hJust);
+  if(just){
+    const k=wk.findIndex(e=>e.id===just.id)+1;
+    msg+=`<p class="hmsg">本週第 ${k||n} 次。</p>
+      ${just.line?`<p class="hsaid">${esc(just.line)}</p>`:`<div class="row2 hline"><input type="text" id="hLine" maxlength="40" placeholder="想寫感想再寫"><button class="btn" data-act="hline">存</button></div>`}`;
+  }
+  if(g&&n>=g){
+    msg+=`<p class="hmsg">這週的${n>g?` ${n} `:['','一','兩','三','四','五','六','七'][g]}次都留下來了。</p><div class="htiles">${wk.map(hTile).join('')}</div>`;
+  }else if(!just){
+    const last=habitEs().slice(-1)[0], said=habitEs().filter(e=>e.line).slice(-1)[0];
+    if(last&&said&&Date.now()-last.ts>4*864e5){ const d=parseD(said.date); msg+=`<p class="hmsg muted">上次你寫：「${esc(said.line)}」<span class="hd">${d.getMonth()+1}/${d.getDate()}</span></p>` }
+  }
+  const r=habitRecap();
+  if(r) msg+=`<button class="link hrecap" data-act="hreview">最近 4 週，${r.hit!=null?`你有 ${r.hit} 週達成目標，`:''}「${esc(name)}」一共 ${r.total} 次。</button>`;
+  return `<div class="paper habit"><div class="hrow"><div><b>${esc(name)}</b><span class="hprog">${prog}</span></div>
+    <button class="btn hadd" data-act="hlog">＋ ${esc(name)}</button></div>${msg}</div>`;
+}
+function openHabitReview(){
+  const name=themeName('habit'), es=habitEs(), g=goalN(), r=habitRecap()||{weeks:[0,-1,-2,-3].map(o=>habitWeek(o))};
+  const rich=es.filter(e=>e.line||e.img), first=rich[0]||es[0], lastE=rich[rich.length-1]||es[es.length-1];
+  const card=(e,t)=>{ if(!e) return ''; const d=parseD(e.date);
+    return `<div class="hcmp"><small>${t}・${d.getMonth()+1} 月 ${d.getDate()} 日</small>${e.img?`<img src="${e.img}" alt="">`:''}<p>${e.line?esc(e.line):'<span class="muted">（沒有寫字）</span>'}</p></div>` };
+  const rows=r.weeks.map((w,i)=>{ const ws=weekStart(-i); return `<div class="hwk"><span>${ws.getMonth()+1}/${ws.getDate()} 那週</span>${g?dots(w.length,Math.max(g,w.length)):''}<b>${w.length} 次${g&&w.length>=g?'・達成':''}</b></div>` }).join('');
+  const said=es.filter(e=>e.line).slice(-12).reverse().map(e=>{ const d=parseD(e.date); return `<button class="hsay" data-act="open" data-id="${e.id}"><em>${d.getMonth()+1}/${d.getDate()}</em>${esc(e.line)}</button>` }).join('');
+  const ov=$('#ovHabit');
+  ov.innerHTML=`<div class="in"><div class="top" style="display:flex;justify-content:space-between;align-items:center"><h2>${esc(name)}・最近 4 週</h2><button class="link" data-act="hclose">關閉</button></div>
+    ${first&&lastE&&first!==lastE?`<div class="hcmps">${card(first,'第一次')}${card(lastE,'最近一次')}</div>`:''}
+    <div class="grp"><h3>每一週</h3>${rows}</div>
+    ${said?`<div class="grp"><h3>你寫過的</h3>${said}</div>`:''}</div>`;
+  fx.ov.show(ov);
+}
+async function habitLog(){
+  const now=new Date(), e={id:String(now.getTime()),ts:now.getTime(),date:dkey(now),theme:'habit',line:'',img:null,late:false,moment:false,backfill:false,sync:'pending'};
+  S.entries.push(e); await putEntry(e); S.hJust=e.id; render(); syncSoon();   // 一句話交換等寫完感想再問，或從今天頁的連結進去
+}
+
+/* ---------- 一句話交換 ----------
+   匿名、單向、非即時。拍完（每天第一次）問「今天想收到什麼」；只有寫給別人的那句話會送出。
+   後端 Edge Function「notes」：submit / inbox / widen / react。 */
+const PEER_CTX=['課業','工作','人際關係','家人','身體與運動','生活瑣事','說不上來'];
+const peerOn=()=>!(S.settings&&S.settings.peer===false);
+function peerMaybe(){
+  const today=dkey(new Date());
+  if(!peerOn()||!consent()||(S.settings&&S.settings.peerAsked===today)) return;
+  setTimeout(()=>{ if(!S.cap) openPeer() },900);
+}
+function openPeer(){
+  saveSettings({peerAsked:dkey(new Date())});
+  S.pq={step:'need',need:null,ctx:null,text:'',busy:false,msg:''};
+  renderPeer(); fx.ov.show($('#ovPeer'));
+}
+function closePeer(){ S.pq=null; fx.ov.hide($('#ovPeer')) }
+function renderPeer(){
+  const q=S.pq; if(!q) return; let body='';
+  if(q.step==='need'){
+    body=`<h2>今天想收到什麼？</h2><p class="sub">會是另一個人寫的一句話，明天送到。</p>
+      <div class="ob-opts"><button class="ob-opt" data-act="pneed" data-v="understand">想被理解</button><button class="ob-opt" data-act="pneed" data-v="encourage">想被鼓勵</button><button class="ob-opt" data-act="pneed" data-v="">今天不用</button></div>`;
+  }else if(q.step==='ctx'){
+    body=`<h2>關於什麼？</h2><p class="sub">${q.need?'只用來找處境相近的人。':'留給別人的那句話，會送給選了同一個的人。'}</p>
+      <div class="chips">${PEER_CTX.map(c=>`<button class="chip" data-act="pctx" data-v="${c}">${c}</button>`).join('')}</div>`;
+  }else if(q.step==='note'){
+    body=`<h2>也留一句給別人？</h2><p class="sub">如果有人也在為「${esc(q.ctx)}」煩，你想對他說什麼？</p>
+      <textarea class="pnote" id="pText" maxlength="120" rows="4" placeholder="可以不寫">${esc(q.text)}</textarea>
+      <p class="pwarn">只有這句話會匿名送出。你的紀錄和照片不會。</p>
+      ${q.msg?`<p class="pwarn err">${esc(q.msg)}</p>`:''}
+      <button class="btn fill wide" data-act="psend" ${q.busy?'disabled':''}>${q.busy?'送出中…':'送出'}</button>
+      <div style="text-align:center;margin-top:14px"><button class="link" data-act="pskipnote">不留了</button></div>`;
+  }else{
+    body=`<h2>${esc(q.done.title)}</h2>${q.done.lines.map(l=>`<p class="sub">${esc(l)}</p>`).join('')}
+      ${q.done.care?`<p class="pcare">如果你現在很不好受，可以打 1925 安心專線（24 小時），或 1995 生命線。</p>`:''}
+      <button class="btn fill wide" data-act="pclose" style="margin-top:18px">好</button>`;
+  }
+  $('#ovPeer').innerHTML=`<div class="in"><div style="display:flex;justify-content:flex-end;min-height:24px">${q.step==='done'?'':'<button class="link" data-act="pclose">直接離開</button>'}</div><div class="pq">${body}</div></div>`;
+}
+async function peerSubmit(){
+  const q=S.pq; if(!q||q.busy) return;
+  q.text=(($('#pText')||{}).value||q.text||'').trim();
+  if(!q.need&&q.text.length<2){ closePeer(); return }
+  q.busy=true; q.msg=''; renderPeer();
+  try{
+    if(!SB.client) throw new Error('offline');
+    if(!SB.user) await sbEnsure(true);
+    const {data:ss}=await SB.client.auth.getSession(); if(!ss||!ss.session) throw new Error('offline');
+    const r=await fnCall('notes',{action:'submit',need:q.need||null,ctx:q.ctx,text:q.text});
+    if(!r.ok) throw new Error(r.out.error||r.status);
+    const lines=[];
+    if(q.need) lines.push(r.out.request==='already'?'今天已經請求過了，明天會送來。':'明天會送來一句話。');
+    if(q.text.length>=2) lines.push(r.out.note==='ok'?'你的話會送給需要的人。':r.out.note==='already'?'今天已經留過一句了。':'這句話要先給團隊看過，才會送出。');
+    q.step='done'; q.done={title:'收到了。',lines,care:!!r.out.care}; q.busy=false; renderPeer(); peerSync(true);
+  }catch(err){ console.error('peer',err); q.busy=false; q.msg=navigator.onLine?'沒有成功，等一下再試。':'沒有連上網路，等一下再試。'; renderPeer() }
+}
+let peerLast=0;
+async function peerSync(force){
+  if(!SB.client||!SB.user||!navigator.onLine||!peerOn()) return;
+  if(!force&&Date.now()-peerLast<5*60e3) return; peerLast=Date.now();
+  try{
+    const r=await fnCall('notes',{action:'inbox'}); if(!r.ok) return;
+    S.peer={items:r.out.items||[],request:r.out.request||null,stats:r.out.stats||null,at:Date.now()}; await kvSet('peer',S.peer);
+    if(S.view==='today'&&!S.cap&&!S.pq){ const el=$('#peerSec'); if(el) el.outerHTML=peerSec() }
+  }catch(err){ console.error('peer inbox',err) }
+}
+const PRX={felt:'有被陪伴到',notfit:'不太適合',report:'檢舉'};
+function peerSec(){
+  const p=S.peer||{items:[],request:null,stats:null}; if(!peerOn()) return '<div id="peerSec"></div>';
+  const today=dkey(new Date());
+  const show=(p.items||[]).filter(x=>!x.reaction||dkey(new Date(x.reactedLocal||x.at))===today).slice(0,2);
+  let out=show.map(x=>{
+    const head=x.same?`有一位也選了「${esc(x.myCtx)}」的人，留給你一句話。`:`一位選了「${esc(x.ctx)}」的人，留給你一句話。`;
+    const st=p.stats&&x.same&&p.stats.ctx===x.myCtx?`<p class="pstat">這週填寫心情標籤的 ${p.stats.total} 人裡，有 ${p.stats.same} 人也選了「${esc(p.stats.ctx)}」。</p>`:'';
+    if(x.reaction) return `<div class="paper peer done"><p class="phead">${head}</p>${x.reaction==='report'?'<p class="muted small">已經檢舉，團隊會看。</p>':`<p class="ptext">${esc(x.text)}</p><p class="muted small">${PRX[x.reaction]}。</p>`}</div>`;
+    return `<div class="paper peer"><p class="phead">${head}</p><p class="ptext">${esc(x.text)}</p>${st}
+      <div class="fb">${['felt','notfit','report'].map(k=>`<button class="btn" data-act="preact" data-id="${x.id}" data-v="${k}">${PRX[k]}</button>`).join('')}</div></div>`;
+  }).join('');
+  const rq=p.request;
+  if(rq&&rq.status==='nomatch'&&!S.peerWait) out+=`<div class="paper peer"><p class="phead">還沒有同樣處境的留言。要收一句來自不同處境的話嗎？</p>
+    <div class="fb"><button class="btn" data-act="pwiden" data-id="${rq.id}">好</button><button class="btn" data-act="pwait">再等等</button></div></div>`;
+  else if(rq&&rq.status==='waiting'&&rq.day===today&&!show.length) out+=`<p class="small muted pwait">明天會送來一句話。</p>`;
+  if(!out&&consent()&&S.settings.peerAsked!==today&&S.entries.some(e=>e.date===today)) out=`<button class="link pask" data-act="peeropen">今天想收到一句話嗎？</button>`;
+  return `<div id="peerSec">${out}</div>`;
 }
 function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd+off*7); return d }
 const DAYC=['一','二','三','四','五','六','日'];
@@ -942,7 +1139,7 @@ async function saveCap(){
   }
   if(c.full) await putPhoto(e.id,c.full);
   S.entries.push(e); S.entries.sort((a,b)=>a.ts-b.ts); await putEntry(e); closeCap();
-  if(!c.date) S.view='today'; setTimeout(()=>render(),260);   // 等拍攝畫面淡出，才看得到太陽落下
+  if(!c.date){ S.view='today'; peerMaybe() } setTimeout(()=>render(),260);   // 等拍攝畫面淡出，才看得到太陽落下
   syncSoon();
 }
 
@@ -1243,6 +1440,7 @@ async function syncStudy(){
   }catch(err){ console.error('study',err) }
   studyBusy=false;
   refreshStudy();
+  peerSync();
 }
 async function fnCall(name,body){
   const {data:ss}=await SB.client.auth.getSession(); const tok=ss&&ss.session&&ss.session.access_token; if(!tok) throw new Error('auth');
@@ -1288,8 +1486,9 @@ const CS={
   store:`<p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>`,
   ai:`<p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。種子測試期間，要有邀請碼才會開始。</p>`,
   research:`<p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
-    <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li><li>第一次打開時回答的三個問題</li></ul>
+    <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li><li>第一次打開時回答的三個問題</li><li>一句話交換裡你選的心情標籤，以及你對收到的話的回饋</li></ul>
     <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。不勾也能正常使用。</p>`,
+  peer:`<p>每天第一次留下紀錄後，可以選「今天想收到什麼」和一個情境，隔天會收到另一位使用者寫的一句話；你也可以留一句給別人。只有你寫給別人的那句話會匿名送出，你的紀錄和照片不會。那句話送出前會先交給 Anthropic 檢查有沒有個資或不適合轉送的內容，有問題的會先擋下，由團隊看過再決定。收到的人看不到你是誰，也不能回覆或私訊。設定裡可以關掉。</p>`,
   people:`<p>「身邊的人」可能會拍到別人。拍之前先問過對方，或避開正臉。這些照片也可能被送給顯影看。</p>`,
   change:`<p>這三個選項之後都能在設定裡改。你也可以在設定裡刪除帳號：手機和雲端上的照片、紀錄、顯影的觀察，以及帳號本身都會刪掉。</p>`,
 };
@@ -1300,7 +1499,7 @@ const OPTS=[
 ];
 function consentBody(){
   return `<h3>你的紀錄存在哪裡</h3>${CS.store}<h3>顯影會看到什麼</h3>${CS.ai}<h3>研究用途（選填）</h3>${CS.research}
-    <h3>拍到別人的時候</h3>${CS.people}<h3>隨時可以改</h3>${CS.change}`;
+    <h3>一句話交換</h3>${CS.peer}<h3>拍到別人的時候</h3>${CS.people}<h3>隨時可以改</h3>${CS.change}`;
 }
 /* 一個選項：勾選＋一句重點，下面「看詳細」收合完整說明（more=false 時不放收合） */
 function optHTML(o,checked,attr,more){
@@ -1345,8 +1544,8 @@ function sbInit(){
   SB.client.auth.getSession().then(()=>sbEnsure());
 }
 /* 沒有登入、備份又是開著的，就在背景建立匿名帳號（要先有網路，沒網路等 online 事件） */
-async function sbEnsure(){
-  const need=bkOn()||aiOn()||researchOn()||!!(S.settings&&S.settings.pendingCode);
+async function sbEnsure(force){
+  const need=!!force||bkOn()||aiOn()||researchOn()||!!(S.settings&&S.settings.pendingCode);
   if(!SB.client||SB.user||SB.anonBusy||!S.settings||!consent()||!need||!navigator.onLine) return;
   SB.anonBusy=true; SB.anonErr='';
   try{
@@ -1508,7 +1707,10 @@ function viewSettings(){
   return `<h2>設定</h2>
     <div class="grp"><h3>習慣主題</h3>
       <div class="row2"><input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"><button class="btn" data-act="setsave">存起來</button></div>
-      <p id="setMsg" class="small muted"></p></div>
+      <p id="setMsg" class="small muted"></p>
+      <p style="margin:6px 0 8px">節奏</p><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${goalN()===n?'on':''}" data-act="goal" data-n="${n}">${n?`每週 ${n} 次`:'隨手記'}</button>`).join('')}</div></div>
+    <div class="grp"><h3>一句話交換</h3><p>拍完後問你今天想收到什麼，隔天收到另一個人寫的一句話。</p>
+      <div class="linkrow"><button class="link" data-act="peertoggle">${peerOn()?'開著':'關著'}・點一下${peerOn()?'關掉':'打開'}</button>${peerOn()?'<button class="link" data-act="peeropen">現在就要</button>':''}</div></div>
     <div class="grp bk" id="bkGrp">${bkHTML()}</div>
     <div class="grp" id="studyGrp">${studyHTML()}</div>
     <div class="grp"><h3>動態</h3>
@@ -1551,7 +1753,7 @@ function maybeAutoRun(){
 
 async function wipeLocal(){
   SB.user=null; SB.anonErr=''; S.studyMsg='';
-  await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings');
+  await clearEntries(); await clearPhotos(); await kvDel('syncDel'); await kvDel('syncUid'); await kvDel('agentLog'); await kvDel('agentMeta'); await kvDel('settings'); await kvDel('peer'); S.peer=null; S.hJust=null;
   for(let i=0;i<400;i++){ const dd=new Date(); dd.setDate(dd.getDate()-i); await kvDel('moment:'+dkey(dd)) }
   S.entries=[]; S.agentLog=[]; S.agentMeta={}; S.settings=null; S.view='today'; S.consentRead=false;
   await ensureMoment();
@@ -1561,6 +1763,25 @@ document.addEventListener('click',async ev=>{
   const a=ev.target.closest('[data-act]'); if(!a) return;
   const d=a.dataset;
   switch(d.act){
+    case 'obgoal':{ const ob=obState(); const h=$('#habit'); if(h) ob.habit=h.value; ob.goal=Number(d.n)||0; document.querySelectorAll('[data-act=obgoal]').forEach(b=>b.classList.toggle('on',b===a)); break }
+    case 'hlog': await habitLog(); break;
+    case 'hline':{ const v=(($('#hLine')||{}).value||'').trim(); const e=S.entries.find(x=>x.id===S.hJust); if(e&&v){ e.line=v.slice(0,40); e.sync='pending'; await putEntry(e); render(); syncSoon(); peerMaybe() } break }
+    case 'hreview': openHabitReview(); break;
+    case 'hclose': fx.ov.hide($('#ovHabit')); break;
+    case 'goal':{ await saveSettings({goal:Number(d.n)||0}); render(); break }
+    case 'peertoggle':{ await saveSettings({peer:!peerOn()}); render(); break }
+    case 'peeropen': openPeer(); break;
+    case 'pneed': S.pq.need=d.v||null; S.pq.step='ctx'; renderPeer(); break;
+    case 'pctx': S.pq.ctx=d.v; S.pq.step='note'; renderPeer(); break;
+    case 'psend': await peerSubmit(); break;
+    case 'pskipnote': if(S.pq){ S.pq.text=''; const t=$('#pText'); if(t) t.value=''; if(S.pq.need) await peerSubmit(); else closePeer() } break;
+    case 'pclose': closePeer(); if(S.view==='today') render(); break;
+    case 'preact':{ const it=S.peer&&S.peer.items.find(x=>String(x.id)===d.id); if(!it||it.reaction) break;
+      if(d.v==='report'&&!confirm('檢舉這句話？團隊會看過，它也不會再送給別人。')) break;
+      it.reaction=d.v; it.reactedLocal=Date.now(); await kvSet('peer',S.peer); const el=$('#peerSec'); if(el) el.outerHTML=peerSec();
+      try{ await fnCall('notes',{action:'react',id:it.id,reaction:d.v}) }catch(err){ console.error(err) } break }
+    case 'pwiden':{ try{ const r=await fnCall('notes',{action:'widen',id:Number(d.id)}); if(r.ok){ S.peer={items:r.out.items||[],request:r.out.request||null,stats:r.out.stats||null,at:Date.now()}; await kvSet('peer',S.peer) } }catch(err){ console.error(err) } const el=$('#peerSec'); if(el) el.outerHTML=peerSec(); break }
+    case 'pwait': S.peerWait=true; { const el=$('#peerSec'); if(el) el.outerHTML=peerSec() } break;
     case 'obpick':{ const ob=obState(); if(ob.picking) break; ob.picking=true; ob.a[d.k]=d.v;
       document.querySelectorAll(`.ob-opt[data-k="${d.k}"]`).forEach(b=>b.classList.toggle('on',b===a));
       obClear(); obTimers.push(setTimeout(()=>{ ob.picking=false; if(ob.step===2) ob.ready=false; obGo(ob.step+1) },380)); break }
@@ -1570,8 +1791,8 @@ document.addEventListener('click',async ev=>{
     case 'obskip':{ const ob=obState(); ob.skipped=ob.step; obGo(OB_STEPS); break }
     case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身', ob=obState();
       const intake={v:1,q1:ob.a.q1||null,q2:ob.a.q2||null,q3:ob.a.q3||null,skippedAt:ob.skipped==null?null:ob.skipped,ts:Date.now(),syncedUid:null};
-      obClear(); S.onb=null; S.settings={habit:h,since:dkey(new Date()),intake}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
-    case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') maybeAutoRun(); break;
+      obClear(); S.onb=null; S.settings={habit:h,since:dkey(new Date()),intake,goal:ob.goal||0}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
+    case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today'){ maybeAutoRun(); peerSync() } break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
     case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
@@ -1666,7 +1887,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v22';
+const APP_VER='v23';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });

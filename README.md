@@ -124,3 +124,11 @@ Dashboard 要開：
 - 研究資料：在 SQL Editor 查 `research.participants`、`research.observations`、`research.entry_activity`。只含同意研究的人，帳號換成代號，不含 email、照片、使用者寫的句子。這個 schema 不對外開放。
 - 刪除帳號：設定 → 刪除我的帳號（Edge Function `account`），刪掉照片、所有資料表與帳號本身。
 - SQL 原始碼：`supabase/research.sql`；函式：`supabase/functions/observe`、`supabase/functions/account`。
+
+## v20–v23 新增
+
+- **第一次打開的引導（v20–v22）**：三題（記錄習慣、發文前會不會在意別人怎麼看、多久回看照片）→ 說中你 → 換個方式 → 示範 → 習慣與節奏。點選項自動下一題，後段自動播放。答案存在 `settings.intake`，只有同意研究的人才上傳到 `intake` 表（`research.intake`）。
+- **習慣節奏（v23）**：設定或引導裡選「隨手記／每週 N 次」。今天頁的習慣卡片可以一鍵打卡（本週第 N 次、想寫再寫），達標時並排呈現這週的紀錄；用滿三週後出現「最近 4 週」回顧（第一次 vs 最近一次、每週次數、寫過的話），一段時間沒打卡會看到「上次你寫：…」。
+- **一句話交換（v23）**：每天第一次留下紀錄後，可選「想被理解／想被鼓勵」和情境，隔天收到另一位使用者寫的一句話；也可以留一句給別人（只有這句匿名送出）。後端是 Edge Function `notes`（submit / inbox / widen / react），留言先由 Claude Haiku 判斷語氣並標記個資、嘲諷、不適合轉送的內容，有問題就先擋下（`status='held'`）。統計只在本週填標籤的人 ≥ 30、同情境 ≥ 5 時才顯示。
+  - 審查：`select id, ctx, text, flags, status from public.peer_notes where status in ('held','reported') order by created_at;`，放行 `update public.peer_notes set status='ok' where id=…;`，移除改成 `'removed'`。
+  - 研究：`research.peer`（標籤、配對結果、回饋）、`research.peer_notes`（語氣、狀態，不含內容）。
