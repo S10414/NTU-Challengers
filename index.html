@@ -1053,14 +1053,15 @@ function renderCap(){
   }
   ov.classList.remove('camon');
   const chips=THEMES().map(t=>`<button class="chip ${c.theme===t.k?'on':''}" data-act="theme" data-k="${t.k}">${esc(t.n)}</button>`).join('');
-  const camBtn=CAM.ok()&&!c.noGUM?`<button class="camlab" data-act="camopen" style="width:100%">打開相機</button>`
+  const pastDay=c.date&&c.date!==dkey(new Date());
+  const camBtn=pastDay?'':CAM.ok()&&!c.noGUM?`<button class="camlab" data-act="camopen" style="width:100%">打開相機</button>`
     :`<label class="camlab">打開相機<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`;
   $('#capBody').innerHTML=`
     <div class="top"><span id="cd" class="cd"></span><button class="link" data-act="capclose">先不要</button></div>
     <p class="now">${c.date?(d=>`${d.getMonth()+1} 月 ${d.getDate()} 日`)(parseD(c.date)):'留下此刻'}</p><div class="latemsg" id="latemsg">${c.camErr?esc(c.camErr):''}</div>${c.camExt?`<p style="margin:-10px 0 16px"><a class="link" href="${esc(c.camExt)}">用預設瀏覽器打開</a></p>`:''}
     ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>
-      <div class="again">${CAM.ok()&&!c.noGUM?'<button class="link" data-act="camopen">重拍</button>':`<label class="link">重拍<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`}<label class="link">從相簿換一張<input type="file" accept="image/*" data-file="lib"></label></div>`
-    :`<div class="camrow">${camBtn}<label class="camlab">從相簿選<input type="file" accept="image/*" data-file="lib"></label></div>`}
+      <div class="again">${pastDay?'':CAM.ok()&&!c.noGUM?'<button class="link" data-act="camopen">重拍</button>':`<label class="link">重拍<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`}<label class="link">從相簿換一張<input type="file" accept="image/*" data-file="lib"></label></div>`
+    :`<div class="camrow">${camBtn}<label class="camlab"${pastDay?' style="width:100%"':''}>從相簿選${pastDay?'這天拍的照片':''}<input type="file" accept="image/*" data-file="lib"></label></div>`}
     <div class="chips">${chips}</div>
     ${c.theme==='people'?'<p class="capnote">拍到別人之前先問過對方，或避開正臉。</p>':''}
     <input class="line" placeholder="一句話就好。可以不寫。" maxlength="40" value="${esc(c.line)}" data-line="1">
@@ -1130,12 +1131,12 @@ async function saveCap(){
   const now=new Date();
   let e;
   if(c.date){
-    // 補照片：日期用格子那天；照片的拍攝時間剛好是那天就用它，否則用那天中午（今天則用現在）
-    const sameDay=c.shotAt&&dkey(new Date(c.shotAt))===c.date;
-    const ts=sameDay?c.shotAt:(c.date===dkey(now)?now.getTime():parseD(c.date).getTime()+12*36e5);
-    e={id:String(now.getTime()),ts,date:c.date,theme:c.theme,line:c.line.trim(),img:c.img,late:false,moment:false,backfill:true,sync:'pending'};
+    // 補照片：只收那一天拍的相簿照片（選照片時已檢查），時間用照片的拍攝時間；今天的格子也可以現拍
+    const ts=c.fromLib&&c.shotAt?c.shotAt:now.getTime();
+    e={id:String(now.getTime()),ts,date:c.date,theme:c.theme,line:c.line.trim(),img:c.img,late:false,moment:false,backfill:!!c.fromLib,tsSrc:c.fromLib?'exif':'live',sync:'pending'};
   }else{
-    e={id:String(now.getTime()),ts:now.getTime(),date:dkey(now),theme:c.theme,line:c.line.trim(),img:c.img,late:(Date.now()-c.start)>120000,moment:c.moment,backfill:!!c.fromLib,sync:'pending'};
+    const lib=c.fromLib&&c.shotAt;   // 從相簿選今天拍的照片：時間用拍攝時間，不算今天的時刻
+    e={id:String(now.getTime()),ts:lib?c.shotAt:now.getTime(),date:dkey(now),theme:c.theme,line:c.line.trim(),img:c.img,late:lib?false:(Date.now()-c.start)>120000,moment:lib?false:c.moment,backfill:!!lib,tsSrc:lib?'exif':'live',sync:'pending'};
   }
   if(c.full) await putPhoto(e.id,c.full);
   S.entries.push(e); S.entries.sort((a,b)=>a.ts-b.ts); await putEntry(e); closeCap();
@@ -1539,7 +1540,7 @@ function sbInit(){
   SB.client.auth.onAuthStateChange((ev,session)=>{
     const u=session?session.user:null, changed=(u&&u.id)!==(SB.user&&SB.user.id);
     SB.user=u; refreshBk();
-    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(async()=>{ syncAll(); await syncStudy(); maybeAutoRun() },0) }
+    if(changed){ if(S.settings&&!S.cap) render(); if(u) setTimeout(async()=>{ syncAll(); await syncStudy() },0) }
   });
   SB.client.auth.getSession().then(()=>sbEnsure());
 }
@@ -1728,7 +1729,8 @@ async function runAgent(){
   S.busy=true; S.err=''; render();
   try{
     const {data:ss}=await SB.client.auth.getSession(); const tok=ss&&ss.session&&ss.session.access_token; if(!tok) throw new Error('auth');
-    const log=S.entries.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',late:!!e.late,moment:!!e.moment,...(e.backfill?{b:1}:{})}));
+    const guess=e=>e.backfill&&!e.tsSrc&&(d=>d.getHours()===12&&d.getMinutes()===0&&d.getSeconds()===0)(new Date(e.ts));   // 舊版補的照片時間是猜的（中午 12:00）
+    const log=S.entries.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',late:!!e.late,moment:!!e.moment,...(e.backfill?{b:1}:{}),...(guess(e)?{tg:1}:{})}));
     const imgs=S.entries.filter(e=>e.img).slice(-10).map(e=>e.img.split(',')[1]);
     const past=S.agentLog.map(m=>({when:new Date(m.ts).toISOString().slice(0,10),mode:m.mode,said:m.text,reaction:m.reaction||null,reply:m.reply||''}));
     const res=await fetch(window.SUPABASE_CONFIG.url.replace(/\/$/,'')+'/functions/v1/observe',{method:'POST',
@@ -1745,11 +1747,6 @@ async function runAgent(){
     await kvSet('agentMeta',S.agentMeta);
   }catch(e){ console.error(e); S.err='它這次沒看清楚。等一下再讓它看一次。' }
   S.busy=false; render();
-}
-function maybeAutoRun(){
-  if(!agentReady()||S.busy||!agentCan()) return;
-  const m=S.agentMeta, fresh=m.lastCheck&&(Date.now()-m.lastCheck)<20*36e5;
-  if(!fresh&&S.entries.length>(m.lastCount||0)) runAgent();
 }
 
 async function wipeLocal(){
@@ -1793,7 +1790,7 @@ document.addEventListener('click',async ev=>{
     case 'onboard':{ const h=($('#habit').value||'健身').trim().slice(0,8)||'健身', ob=obState();
       const intake={v:1,q1:ob.a.q1||null,q2:ob.a.q2||null,q3:ob.a.q3||null,skippedAt:ob.skipped==null?null:ob.skipped,ts:Date.now(),syncedUid:null};
       obClear(); S.onb=null; S.settings={habit:h,since:dkey(new Date()),intake,goal:ob.goal||0}; await kvSet('settings',S.settings); render({enter:true}); sbEnsure(); break }
-    case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today'){ maybeAutoRun(); peerSync() } break;
+    case 'nav': S.studyMsg=''; if(d.v!==S.view){ S.view=d.v; render({enter:true,nav:true}); dotView=d.v } fx.nav(d.v); if(d.v==='today') peerSync(); break;
     case 'install': if(S.installEvt){ S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt=null; render() } break;
     case 'asknotif': try{ S.notif=await Notification.requestPermission() }catch{} render(); break;
     case 'cap':{ const r=a.getBoundingClientRect(); openCap(d.theme||null,d.moment==='1',{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
@@ -1862,7 +1859,15 @@ document.addEventListener('click',async ev=>{
 document.addEventListener('change',async ev=>{
   if(ev.target.matches('[data-consent]')){ const k=ev.target.dataset.consent; await consentSet({[k]:ev.target.checked}); if(ev.target.checked) sbEnsure(); refreshStudy(); return }
   if(ev.target.matches('[data-file]')&&S.cap){ const f=ev.target.files&&ev.target.files[0]; if(!f) return; S.cap.line=($('[data-line]')||{}).value||S.cap.line; CAM.stop(); S.cap.step='form';
-    S.cap.fromLib=ev.target.dataset.file==='lib'; S.cap.shotAt=S.cap.fromLib?await exifTime(f):null;
+    const fromLib=ev.target.dataset.file==='lib', shotAt=fromLib?await exifTime(f):null;
+    if(fromLib){   // 相簿照片只能放在它拍攝的那一天，時間用照片本身的拍攝時間
+      const want=S.cap.date||dkey(new Date()), md=k=>{ const d=parseD(k); return `${d.getMonth()+1} 月 ${d.getDate()} 日` };
+      const bad=!shotAt?`讀不到這張照片的拍攝日期（截圖或別人傳來的照片常會這樣），${want===dkey(new Date())?'換一張，或直接拍。':'換一張這天拍的照片。'}`
+        :(dkey(new Date(shotAt))!==want?`這張是 ${md(dkey(new Date(shotAt)))}拍的，只能放在那一天。這裡要放 ${md(want)}拍的照片。`:'');
+      ev.target.value='';
+      if(bad){ S.cap.camErr=bad; renderCap(); return }
+    }
+    S.cap.camErr=''; S.cap.fromLib=fromLib; S.cap.shotAt=shotAt;
     const r=await processPhoto(f); S.cap.img=r?r.img:null; S.cap.full=r?r.full:null; renderCap() }
 });
 document.addEventListener('input',ev=>{ if(ev.target.matches('[data-line]')&&S.cap) S.cap.line=ev.target.value });
@@ -1888,7 +1893,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v24';
+const APP_VER='v25';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
@@ -1901,7 +1906,7 @@ load().then(async()=>{ SB.last=await kvGet('syncLast')||0; sbInit();
     if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function') document.addEventListener('touchend',()=>fx.tilt(true),{once:true});
     else fx.tilt(true);
   }
-  render({enter:true}); tickMoment(); maybeAutoRun() });
+  render({enter:true}); tickMoment() });
 </script>
 </body>
 </html>
