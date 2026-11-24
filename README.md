@@ -132,3 +132,9 @@ Dashboard 要開：
 - **一句話交換（v23）**：每天第一次留下紀錄後，可選「想被理解／想被鼓勵」和情境，隔天收到另一位使用者寫的一句話；也可以留一句給別人（只有這句匿名送出）。後端是 Edge Function `notes`（submit / inbox / widen / react），留言先由 Claude Haiku 判斷語氣並標記個資、嘲諷、不適合轉送的內容，有問題就先擋下（`status='held'`）。統計只在本週填標籤的人 ≥ 30、同情境 ≥ 5 時才顯示。
   - 審查：`select id, ctx, text, flags, status from public.peer_notes where status in ('held','reported') order by created_at;`，放行 `update public.peer_notes set status='ok' where id=…;`，移除改成 `'removed'`。
   - 研究：`research.peer`（標籤、配對結果、回饋）、`research.peer_notes`（語氣、狀態，不含內容）。
+
+## v24–v26
+
+- **v24**：呼叫 Anthropic 失敗不扣每日額度；餘額不足時顯示「顯影暫停中」。
+- **v25**：相簿照片只能放在拍攝當天，時間用照片的拍攝時間（讀不到拍攝日期的照片不收）；顯影只在按「讓它看一次」時才看，不再自動呼叫；提示詞允許依補上的紀錄說話。
+- **v26**：拿掉邀請碼。同意顯影就能用；改用全站每日上限擋濫用（`observe` 的 `GLOBAL_LIMIT`，預設 100 次，計數在 `observe_global` 表）。每個帳號每天仍是 6 次（`DAILY_LIMIT`）。

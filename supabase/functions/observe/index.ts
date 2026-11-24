@@ -5,6 +5,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MODEL = "claude-sonnet-4-6";
 const DAILY_LIMIT = 6;            // 每個帳號每天最多幾次（台北時間）
+const GLOBAL_LIMIT = 100;         // 全部使用者合計每天最多幾次（v26 起不需要邀請碼，用這個擋濫用）
 const MAX_BODY = 6_000_000;       // 請求大小上限（bytes）
 const MAX_IMAGES = 10, MAX_ENTRIES = 3000, MAX_PAST = 200;
 const MIN_ENTRIES = 8, MIN_SPAN_DAYS = 7;   // 和 App、提示詞一致：滿 8 則、跨 7 天才看
@@ -70,24 +71,22 @@ Deno.serve(async (req) => {
   const span = spanDays(entries);
   if (entries.length < MIN_ENTRIES || span < MIN_SPAN_DAYS) return J({ speak: false, mode: "say", text: "", why: "", skipped: "threshold" });
 
-  // 4) 有沒有資格：邀請碼分組（ai_from 已到）、最新同意紀錄有勾顯影
-  const [{ data: part }, { data: con }] = await Promise.all([
-    admin.from("participants").select("ai_from").eq("user_id", u.user.id).maybeSingle(),
-    admin.from("consents").select("ai,research").eq("user_id", u.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  if (!part || !part.ai_from || part.ai_from > taipeiToday()) return J({ error: "not_enabled", ai_from: part?.ai_from || null }, 403);
+  // 4) 有沒有資格：最新同意紀錄有勾顯影（v26 起不需要邀請碼）
+  const { data: con } = await admin.from("consents").select("ai,research").eq("user_id", u.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!con || !con.ai) return J({ error: "no_consent" }, 403);
 
   // 5) 每日額度
   const { data: ok, error: qe } = await admin.rpc("observe_take", { p_user: u.user.id, p_limit: DAILY_LIMIT });
   if (qe) return J({ error: "quota_check" }, 500);
   if (!ok) return J({ error: "limit", limit: DAILY_LIMIT }, 429);
+  const { data: gok, error: ge } = await admin.rpc("observe_global_take", { p_limit: GLOBAL_LIMIT });
+  if (ge || !gok) { await admin.rpc("observe_refund", { p_user: u.user.id }); return J({ error: ge ? "quota_check" : "global_limit" }, ge ? 500 : 429); }
 
   // 6) 呼叫 Anthropic
   const content: unknown[] = images.map((d: string) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: d } }));
   content.push({ type: "text", text });
   // 失敗（餘額不足、服務出錯、輸出壞掉）不算進每日次數
-  const refund = () => admin.rpc("observe_refund", { p_user: u.user.id });
+  const refund = () => Promise.all([admin.rpc("observe_refund", { p_user: u.user.id }), admin.rpc("observe_global_refund")]);
   let r: Response, out: any;
   try {
     r = await fetch("https://api.anthropic.com/v1/messages", {

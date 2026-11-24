@@ -87,3 +87,24 @@ begin
 end; $$;
 revoke execute on function public.observe_refund(uuid) from public, anon, authenticated;
 grant execute on function public.observe_refund(uuid) to service_role;
+
+-- v26：不需要邀請碼，改用全站每日上限擋濫用（全部使用者合計，由後端 observe 檢查）
+create table if not exists public.observe_global (day date primary key, n int not null default 0);
+alter table public.observe_global enable row level security;
+revoke all on public.observe_global from anon, authenticated;
+create or replace function public.observe_global_take(p_limit int) returns boolean
+language plpgsql set search_path = '' as $$
+declare c int;
+begin
+  insert into public.observe_global(day, n) values ((now() at time zone 'Asia/Taipei')::date, 1)
+  on conflict (day) do update set n = public.observe_global.n + 1 returning n into c;
+  if c > p_limit then update public.observe_global set n = n - 1 where day = (now() at time zone 'Asia/Taipei')::date; return false; end if;
+  return true;
+end; $$;
+create or replace function public.observe_global_refund() returns void
+language plpgsql set search_path = '' as $$
+begin update public.observe_global set n = greatest(n - 1, 0) where day = (now() at time zone 'Asia/Taipei')::date; end; $$;
+revoke execute on function public.observe_global_take(int) from public, anon, authenticated;
+revoke execute on function public.observe_global_refund() from public, anon, authenticated;
+grant execute on function public.observe_global_take(int) to service_role;
+grant execute on function public.observe_global_refund() to service_role;

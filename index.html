@@ -933,9 +933,6 @@ function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)r
 const RX={interesting:'有意思',meh:'普通',wrong:'完全不對',yes:'有這回事',no:'不是這樣'};
 function agentSec(){
   if(!aiOn()) return '';
-  const p=part();
-  if(!p||!p.ai_from) return '';
-  if(!partActive()) return `<section class="agent-sec"><p class="agent-foot">顯影 ${aiFromStr(p.ai_from)}開始</p></section>`;
   const can=agentCan(), ready=agentReady();
   const prints=S.agentLog.slice().reverse().map(m=>`<div class="print"${m.id===S.freshId?' data-fresh':''}>
     <p class="txt">${esc(m.text)}</p>
@@ -1473,19 +1470,16 @@ async function syncFeedback(){
   if(dirty) await kvSet('agentLog',S.agentLog);
 }
 function studyHTML(){
-  const c=consent()||{}, p=part(), pend=S.settings&&S.settings.pendingCode;
-  const grp=p?(!p.ai_from?'種子測試：這段期間只記錄。':(partActive()?'種子測試：顯影已開始。':`種子測試：顯影 ${aiFromStr(p.ai_from)}開始。`)):(pend?`邀請碼 ${esc(pend)} 連上網路後啟用。`:'');
+  const c=consent()||{};
   return `<h3>顯影與研究</h3>
     ${OPTS.filter(o=>o.k!=='backup').map(o=>optHTML(o,c[o.k],`data-consent="${o.k}"`,false)).join('')}
-    ${grp?`<p style="margin-top:12px">${grp}</p>`:''}
-    ${p?'':`<div class="row2" style="margin-top:12px"><input type="text" class="codein" id="setCode" autocomplete="off" autocapitalize="characters" placeholder="邀請碼"><button class="btn" data-act="redeem">加入</button></div>`}
     ${S.studyMsg?`<p class="st">${esc(S.studyMsg)}</p>`:''}
     <div class="linkrow"><button class="link" data-act="consentread">看完整說明</button></div>`;
 }
 function refreshStudy(){ const g=$('#studyGrp'); if(g) g.innerHTML=studyHTML() }
 const CS={
   store:`<p>照片和文字存在這支手機。開著雲端備份時，也會存一份到 Supabase 的雲端（新加坡機房），只有你的帳號讀得到。其他使用者看不到你的任何東西：沒有公開頁面、沒有讚、沒有追蹤。</p>`,
-  ai:`<p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。種子測試期間，要有邀請碼才會開始。</p>`,
+  ai:`<p>顯影每次「看」，會把你全部紀錄的文字（日期、時段、主題、那一句話）和最近 10 張縮圖，送到 Anthropic（開發 Claude 的公司）產生回應。依 Anthropic 的商用條款，這些內容不會被拿去訓練模型，並會在 30 天內刪除（被判定違反使用政策的內容最多保留 2 年）。</p>`,
   research:`<p>Revela 是台大 NTU Challengers 的課程專案。同意的話，團隊會用下面這些資料研究顯影是否真的有幫助：</p>
     <ul><li>顯影每次說了什麼，以及它選擇不說話的時候</li><li>你對它的回饋和補充的話</li><li>你記錄的日期、時段、主題和次數</li><li>第一次打開時回答的三個問題</li><li>一句話交換裡你選的心情標籤，以及你對收到的話的回饋</li></ul>
     <p>你的帳號會換成一串代號，團隊看不到你的 email。團隊不會看你的照片，也不會看你寫的那一句話；但顯影說的話有時會提到你紀錄裡的內容。研究結束後，這些資料只用在課程報告。不勾也能正常使用。</p>`,
@@ -1515,8 +1509,6 @@ function viewConsent(read){
   return `<div class="consent"><h2>開始之前</h2>
     <p class="sub">選要開的功能，之後都能在設定裡改。</p>
     ${OPTS.map(o=>optHTML(o,on[o.k],`id="${o.id}"`,true)).join('')}
-    <h3>邀請碼（選填）</h3>
-    <input type="text" class="codein" id="cCode" autocomplete="off" autocapitalize="characters" placeholder="收到的話填在這裡" value="${esc((S.settings&&S.settings.pendingCode)||'')}">
     <details class="more foot"><summary>拍到別人・隨時可以改</summary><h4>拍到別人的時候</h4>${CS.people}<h4>隨時可以改</h4>${CS.change}</details>
     <div style="margin:26px 0 44px"><button class="btn fill wide" data-act="consentok">同意並開始</button></div></div>`;
 }
@@ -1723,7 +1715,7 @@ function viewSettings(){
 
 /* ---------- 顯影：觀察者 ---------- */
 /* 顯影在我們自己的後端（Supabase Edge Function「observe」）執行，金鑰只存在後端 */
-const agentCan=()=>!!(SB.client&&SB.user&&aiOn()&&partActive());
+const agentCan=()=>!!(SB.client&&SB.user&&aiOn());   // v26 起不需要邀請碼，同意顯影就能用
 async function runAgent(){
   if(S.busy||!agentReady()||!agentCan()) return;
   S.busy=true; S.err=''; render();
@@ -1737,7 +1729,7 @@ async function runAgent(){
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok,'apikey':window.SUPABASE_CONFIG.anonKey},
       body:JSON.stringify({today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past,images:imgs})});
     const out=await res.json().catch(()=>({}));
-    if(res.status===429){ S.err='今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
+    if(res.status===429){ S.err=out.error==='global_limit'?'今天大家讓顯影看了很多次，明天再看。':'今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
     if(res.status===403){ S.err=out.error==='no_consent'?'顯影的同意紀錄還沒傳上去，等一下再試。':'顯影還沒對這個帳號開放。'; S.busy=false; syncStudy(); render(); return }
     if(out.skipped){ S.agentMeta=Object.assign({},S.agentMeta,{lastCheck:Date.now(),lastCount:S.entries.length,lastSpoke:false}); await kvSet('agentMeta',S.agentMeta); S.busy=false; render(); return }
     if(out.error==='billing'){ S.err='顯影暫停中：後台的額度用完了，團隊補上後就會恢復。'; S.busy=false; render(); return }
@@ -1835,9 +1827,7 @@ document.addEventListener('click',async ev=>{
     case 'export':{ const blob=new Blob([JSON.stringify({entries:S.entries,agentLog:S.agentLog},null,2)],{type:'application/json'});
       const u=URL.createObjectURL(blob), a2=document.createElement('a'); a2.href=u; a2.download='Revela-'+dkey(new Date())+'.json'; a2.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); break }
     case 'consentok':{
-      const code=($('#cCode').value||'').trim();
       await consentSet({backup:$('#cBackup').checked,ai:$('#cAi').checked,research:$('#cResearch').checked});
-      if(code) await saveSettings({pendingCode:code.toUpperCase()});
       S.view='today'; render({enter:true}); await sbEnsure(); if(SB.user) syncStudy(); syncSoon(400); break }
     case 'consentread': S.consentRead=true; render({enter:true}); break;
     case 'consentback': S.consentRead=false; S.view='settings'; render({enter:true}); break;
@@ -1893,7 +1883,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v25';
+const APP_VER='v26';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
