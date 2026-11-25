@@ -376,6 +376,44 @@
   .peer.done .ptext{margin-bottom:4px}
   .pwait{margin:4px 0 14px}
   .pask{display:block;margin:0 0 14px;font-size:14px}
+
+  /* ---------- v28 手感與圓角 ----------
+     圓角分三層：按鈕和單行輸入框最圓（膠囊）、卡片中等、照片最小 */
+  :root{--r-pill:999px;--r-card:18px;--r-box:14px;--r-photo:10px;--spring:cubic-bezier(.34,1.56,.64,1)}
+
+  /* 1. 按下去微微縮小、放開彈回來 */
+  .btn,.chip,.link,.camlab,.frame.add,.seg button,.hsay,nav.tabs button{
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    transition:transform .38s var(--spring),background-color .2s,color .2s,border-color .2s,opacity .2s}
+  .btn:active:not(:disabled),.chip:active,.link:active,.camlab:active,.frame.add:active,.seg button:active,.hsay:active{transform:scale(.96);transition-duration:.08s}
+  /* 切換分頁：選到的那個彈一下 */
+  @keyframes tabpop{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+  nav.tabs button.on{animation:tabpop .5s var(--spring)}
+
+  /* 2. 輸入框：膠囊形，點進去時邊框和底色慢慢變 */
+  .ov.cap input.line,.habit .hline input,#view.v-settings .row2 input,.bk .row2 input,
+  .consent .codein,#view.v-settings .codein,.onb input,.ob-habit input{
+    background:rgba(255,250,240,.55);border:1px solid var(--line);border-radius:var(--r-pill);
+    padding:12px 18px;transition:border-color .2s,background-color .2s,box-shadow .2s;outline:none}
+  .ov.cap input.line{font-size:17px}
+  .onb input,.ob-habit input{font-size:19px}
+  .print textarea,.pnote{background:rgba(255,250,240,.55);border:1px solid var(--line);border-radius:var(--r-box);
+    padding:10px 14px;transition:border-color .2s,background-color .2s,box-shadow .2s;outline:none}
+  .ov.cap input.line:focus,.habit .hline input:focus,#view.v-settings .row2 input:focus,.bk .row2 input:focus,
+  .consent .codein:focus,#view.v-settings .codein:focus,.onb input:focus,.ob-habit input:focus,.print textarea:focus,.pnote:focus{
+    border-color:var(--ink);background:var(--paper);box-shadow:0 0 0 4px rgba(43,33,28,.07)}
+  /* 有打字，旁邊的按鈕才亮 */
+  .hline:has(input:placeholder-shown) .btn,.row2:has(input:placeholder-shown) .btn,
+  .print:has(textarea[data-reply]:placeholder-shown) [data-act=reply]{opacity:.35;pointer-events:none}
+
+  /* 3. 圓角 */
+  .btn,.habit .hadd,.weekhead .btn,.notice .btn,.print .fb .btn,.peer .fb .btn{border-radius:var(--r-pill)}
+  .paper,.print,.moment{border-radius:var(--r-card)}
+  .notice{border-radius:var(--r-box);border-left:0;box-shadow:inset 0 0 0 1px var(--line)}
+  .camlab,.hcmp,.pcare{border-radius:var(--r-box)}
+  .strip{border-radius:var(--r-box)}
+  .frame,.htile,.entry .th,.ob-pile .ph,.mk .row i{border-radius:var(--r-photo)}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -1705,7 +1743,7 @@ function viewSettings(){
   const st=S.settings||{};
   return `<h2>設定</h2>
     <div class="grp"><h3>習慣主題</h3>
-      <div class="row2"><input type="text" id="setHabit" maxlength="8" value="${esc(st.habit||'')}"><button class="btn" data-act="setsave">存起來</button></div>
+      <div class="row2"><input type="text" id="setHabit" maxlength="8" placeholder="習慣名稱" value="${esc(st.habit||'')}"><button class="btn" data-act="setsave">存起來</button></div>
       <p id="setMsg" class="small muted"></p>
       <p style="margin:6px 0 8px">節奏</p><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${goalN()===n?'on':''}" data-act="goal" data-n="${n}">${n?`每週 ${n} 次`:'隨手記'}</button>`).join('')}</div></div>
     <div class="grp"><h3>一句話交換</h3><p>拍完後問你今天想收到什麼，隔天收到另一個人寫的一句話。</p>
@@ -1889,7 +1927,8 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v27';
+const APP_VER='v28';
+document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
