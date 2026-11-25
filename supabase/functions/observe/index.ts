@@ -8,7 +8,7 @@ const DAILY_LIMIT = 6;            // 每個帳號每天最多幾次（台北時�
 const GLOBAL_LIMIT = 100;         // 全部使用者合計每天最多幾次（v26 起不需要邀請碼，用這個擋濫用）
 const MAX_BODY = 6_000_000;       // 請求大小上限（bytes）
 const MAX_IMAGES = 10, MAX_ENTRIES = 3000, MAX_PAST = 200;
-const MIN_ENTRIES = 8, MIN_SPAN_DAYS = 7;   // 和 App、提示詞一致：滿 8 則、跨 7 天才看
+const MIN_ENTRIES = 8, MIN_SPAN_DAYS = 7;   // 和 App、提示詞一致：滿 8 則，或跨 7 天就看（v35 起是「或」）
 const taipeiToday = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 function spanDays(entries: any[]) {
   const ds = entries.map((e) => String(e?.d || "")).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
@@ -21,10 +21,10 @@ const J = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status
 function systemPrompt(habit: string) {
   return `你是「Revela」這個 app 裡的觀察者（功能名稱叫「顯影」）。使用者用這個 app 隨機記錄真實生活的片段（照片＋一句話），分成四個主題：日常、身邊的人、所在之處、習慣（${habit}）。你只做一件事：長期看這些紀錄，只在真的看見一個「跨越時間的模式」時才開口。
 
-你會收到：所有紀錄的日期、星期、時段、主題、一句話（JSON；b=1 表示是事後從相簿補上的照片，日期和時段都是照片實際的拍攝時間，和當下拍的一樣算數；tg=1 表示這則的時段不確定，只用它的日期和內容，不要拿來推論幾點），最近幾張照片（依時間排序，最後一張最新），以及你過去說過的話和使用者的回應。
+你會收到：所有紀錄的日期、星期、時段、主題、一句話（JSON；b=1 表示是事後從相簿補上的照片，日期和時段都是照片實際的拍攝時間，和當下拍的一樣算數；tg=1 表示這則的時段不確定，只用它的日期和內容，不要拿來推論幾點），最近幾張照片（依時間排序，最後一張最新；每張照片前面有一行「照片 N」標示它是哪一天、幾點、哪個主題、寫了什麼，照片的內容要和那一則紀錄一起看），以及你過去說過的話和使用者的回應。
 
 怎麼決定：
-1. 紀錄還太少、太短（少於一週或不到八則）就不要開口：speak=false。紀錄夠了的時候，主動找出一件有根據的事說出來：同一個地方、同一個人、同一種東西、同一個時段出現三次以上，照片裡反覆出現的東西，或某段時間前後明顯不同。只有真的找不到任何重複時才沉默，沉默時在 why 寫下你找過什麼。
+1. 紀錄還太少（不到八則，而且跨不到一週）就不要開口：speak=false。紀錄夠了的時候，主動找出一件有根據的事說出來：同一個地方、同一個人、同一種東西、同一個時段出現三次以上，照片裡反覆出現的東西，或某段時間前後明顯不同。只有真的找不到任何重複時才沉默，沉默時在 why 寫下你找過什麼。
 2. 一則紀錄的內容不是模式。模式是「反覆出現」或「明顯改變」：同一個地方、同一個時段、同一種東西、某一天之後變得不一樣。
 3. 有把握的行為模式，用「說」（mode=say）：具體指出你看到什麼，然後停下。不解釋意義，不給建議。
 4. 涉及詮釋、你沒把握的，用「問」（mode=ask）：講出你注意到的，用一個問題把詮釋權交回給對方。
@@ -62,14 +62,17 @@ Deno.serve(async (req) => {
   if (!entries) return J({ error: "bad_payload" }, 400);
   const habit = String(b.habit || "習慣").slice(0, 8);
   const past = (Array.isArray(b.past_observations) ? b.past_observations : []).slice(-MAX_PAST);
-  const images = (Array.isArray(b.images) ? b.images : []).slice(-MAX_IMAGES)
-    .filter((s: unknown) => typeof s === "string" && /^[A-Za-z0-9+/=]+$/.test(s as string) && (s as string).length < 900_000);
+  // 照片和它屬於的紀錄（App 送來的 photos 和 images 同順序）先配對，再過濾不合格的照片，才不會錯位
+  const rawImgs = (Array.isArray(b.images) ? b.images : []).slice(-MAX_IMAGES);
+  const rawMeta = (Array.isArray(b.photos) ? b.photos : []).slice(-MAX_IMAGES);
+  const pairs = rawImgs.map((d: unknown, i: number) => ({ d, m: rawMeta[i + rawMeta.length - rawImgs.length] }))
+    .filter((x: any) => typeof x.d === "string" && /^[A-Za-z0-9+/=]+$/.test(x.d) && x.d.length < 900_000);
   const text = JSON.stringify({ today: String(b.today || "").slice(0, 10), habit, entries, past_observations: past });
   if (text.length > 1_500_000) return J({ error: "too_large" }, 413);
 
   // 3) 門檻：不到就直接回沉默，不呼叫模型、不扣次數
   const span = spanDays(entries);
-  if (entries.length < MIN_ENTRIES || span < MIN_SPAN_DAYS) return J({ speak: false, mode: "say", text: "", why: "", skipped: "threshold" });
+  if (entries.length < MIN_ENTRIES && span < MIN_SPAN_DAYS) return J({ speak: false, mode: "say", text: "", why: "", skipped: "threshold" });
 
   // 4) 有沒有資格：最新同意紀錄有勾顯影（v26 起不需要邀請碼）
   const { data: con } = await admin.from("consents").select("ai,research").eq("user_id", u.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -83,7 +86,17 @@ Deno.serve(async (req) => {
   if (ge || !gok) { await admin.rpc("observe_refund", { p_user: u.user.id }); return J({ error: ge ? "quota_check" : "global_limit" }, ge ? 500 : 429); }
 
   // 6) 呼叫 Anthropic
-  const content: unknown[] = images.map((d: string) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: d } }));
+  // 每張照片前面插一行標籤，說明它屬於哪一則紀錄
+  const label = (m: any, n: number) => {
+    if (!m || typeof m !== "object") return `照片 ${n}`;
+    const s = (v: unknown, k: number) => String(v ?? "").slice(0, k);
+    return `照片 ${n}：${s(m.d, 10)}（${s(m.w, 2)}）${m.tg ? "時段不確定" : s(m.h, 2) + " 點"}・${s(m.t, 8)}${m.b ? "・從相簿補上" : ""}${m.l ? "・「" + s(m.l, 60) + "」" : ""}`;
+  };
+  const content: unknown[] = [];
+  pairs.forEach((x: any, i: number) => {
+    content.push({ type: "text", text: label(x.m, i + 1) });
+    content.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: x.d } });
+  });
   content.push({ type: "text", text });
   // 失敗（餘額不足、服務出錯、輸出壞掉）不算進每日次數
   const refund = () => Promise.all([admin.rpc("observe_refund", { p_user: u.user.id }), admin.rpc("observe_global_refund")]);

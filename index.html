@@ -1065,9 +1065,9 @@ const MIN_ENTRIES=8, MIN_SPAN_DAYS=7;
 function spanDays(){ if(!S.entries.length) return 0; const ds=S.entries.map(e=>e.date).sort(); return Math.round((parseD(ds[ds.length-1])-parseD(ds[0]))/864e5)+1 }
 /* 還沒到門檻時，說清楚差多少（可以從「這週」補過去的照片，所以講「跨幾天」不講「再過幾天」） */
 function agentWaitMsg(){
-  return `顯影要 ${MIN_ENTRIES} 則、跨 ${MIN_SPAN_DAYS} 天的紀錄才會開始看。現在 ${S.entries.length} 則、${spanDays()} 天。`;
+  return `紀錄滿 ${MIN_ENTRIES} 則，或跨 ${MIN_SPAN_DAYS} 天，顯影就會開始看。現在 ${S.entries.length} 則、${spanDays()} 天。`;
 }
-function agentReady(){ return S.entries.length>=MIN_ENTRIES&&spanDays()>=MIN_SPAN_DAYS }
+function agentReady(){ return S.entries.length>=MIN_ENTRIES||spanDays()>=MIN_SPAN_DAYS }   // v35：滿 8 則，或跨 7 天
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
 const RX={interesting:'有意思',meh:'普通',wrong:'完全不對',yes:'有這回事',no:'不是這樣'};
 function agentSec(){
@@ -1905,11 +1905,14 @@ async function runAgent(){
     const {data:ss}=await SB.client.auth.getSession(); const tok=ss&&ss.session&&ss.session.access_token; if(!tok) throw new Error('auth');
     const guess=e=>e.backfill&&!e.tsSrc&&(d=>d.getHours()===12&&d.getMinutes()===0&&d.getSeconds()===0)(new Date(e.ts));   // 舊版補的照片時間是猜的（中午 12:00）
     const log=S.entries.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',late:!!e.late,moment:!!e.moment,...(e.backfill?{b:1}:{}),...(guess(e)?{tg:1}:{})}));
-    const imgs=S.entries.filter(e=>e.img).slice(-10).map(e=>e.img.split(',')[1]);
+    const withImg=S.entries.filter(e=>e.img).slice(-10);
+    const imgs=withImg.map(e=>e.img.split(',')[1]);
+    // 每張照片屬於哪一則紀錄：和 imgs 同順序（v35）
+    const photos=withImg.map(e=>({d:e.date,w:'週'+WD[parseD(e.date).getDay()],h:new Date(e.ts).getHours(),t:themeName(e.theme),l:e.line||'',...(e.backfill?{b:1}:{}),...(guess(e)?{tg:1}:{})}));
     const past=S.agentLog.map(m=>({when:new Date(m.ts).toISOString().slice(0,10),mode:m.mode,said:m.text,reaction:m.reaction||null,reply:m.reply||''}));
     const res=await fetch(window.SUPABASE_CONFIG.url.replace(/\/$/,'')+'/functions/v1/observe',{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok,'apikey':window.SUPABASE_CONFIG.anonKey},
-      body:JSON.stringify({today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past,images:imgs})});
+      body:JSON.stringify({today:dkey(new Date()),habit:(S.settings&&S.settings.habit)||'',entries:log,past_observations:past,images:imgs,photos})});
     const out=await res.json().catch(()=>({}));
     if(res.status===429){ S.err=out.error==='global_limit'?'今天大家讓顯影看了很多次，明天再看。':'今天看了幾次了，明天再讓它看。'; S.busy=false; render(); return }
     if(res.status===403){ S.err=out.error==='no_consent'?'顯影的同意紀錄還沒傳上去，等一下再試。':'顯影還沒對這個帳號開放。'; S.busy=false; syncStudy(); render(); return }
@@ -2068,7 +2071,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v34';
+const APP_VER='v35';
 document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
