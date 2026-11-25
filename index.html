@@ -414,6 +414,23 @@
   .strip{border-radius:var(--r-box)}
   .frame,.htile,.entry .th,.ob-pile .ph,.mk .row i{border-radius:var(--r-photo)}
 
+  /* ---------- v29 照片當主角 ---------- */
+  /* 今天頁：有照片的紀錄放大，不用卡片，靠留白分隔 */
+  .entry.post{display:block;margin:0 0 26px}
+  .entry.post button{display:block}
+  .entry.post .ph{aspect-ratio:4/5;border-radius:var(--r-photo);overflow:hidden;background:var(--paper-2);margin-bottom:10px}
+  .entry.post .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .entry.post .line{font-size:17px;margin:0 0 2px}
+  .entry.note{display:block;border-top:1px solid var(--line);padding:12px 0;margin:0 0 6px}
+  .entry.note button{display:block}
+  /* 這週：沒拍的格子變安靜，只留一個很淡的＋ */
+  .frame.empty{background:rgba(243,226,214,.45)}
+  .frame.empty span{display:none}
+  .frame.empty.add::after{left:50%;right:auto;top:50%;transform:translate(-50%,-50%);font-size:18px;opacity:.3}
+  /* 分頁：線條圖示 + 文字 */
+  nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px}
+  nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -423,9 +440,9 @@
   <header class="top"><h1>Revela</h1><span class="date" id="hdate"></span></header>
   <main id="view"></main>
   <nav class="tabs" id="tabs">
-    <button data-act="nav" data-v="today">今天</button>
-    <button data-act="nav" data-v="week">這週</button>
-    <button data-act="nav" data-v="settings">設定</button>
+    <button data-act="nav" data-v="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>今天</button>
+    <button data-act="nav" data-v="week"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>這週</button>
+    <button data-act="nav" data-v="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>設定</button>
     <i id="navdot" aria-hidden="true"></i>
   </nav>
 </div>
@@ -692,10 +709,13 @@ function viewToday(){
   return `${notices()}${top}${peerSec()}${habitSec()}${list.map(entryRow).join('')}${agentSec()}`;
 }
 function entryRow(e){
-  return `<div class="paper entry"><button data-act="open" data-id="${e.id}">
-    <div class="th">${e.img?`<img src="${e.img}" alt="">`:''}</div>
-    <div><p class="line">${e.line?esc(e.line):'<span class="muted">（沒有寫字）</span>'}</p>
-    <div class="meta">${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 晚了一點':''}</div></div>
+  const line=e.line?esc(e.line):'', meta=`${fmtTime(e.ts)} · ${esc(themeName(e.theme))}${e.late?' · 晚了一點':''}`;
+  if(e.img) return `<div class="entry post"><button data-act="open" data-id="${e.id}">
+    <div class="ph"><img src="${e.img}" alt="" loading="lazy"></div>
+    ${line?`<p class="line">${line}</p>`:''}<div class="meta">${meta}</div>
+  </button></div>`;
+  return `<div class="entry note"><button data-act="open" data-id="${e.id}">
+    <p class="line">${line||'<span class="muted">（沒有寫字）</span>'}</p><div class="meta">${meta}</div>
   </button></div>`;
 }
 /* ---------- 習慣節奏 ----------
@@ -1927,7 +1947,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v28';
+const APP_VER='v29';
 document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
