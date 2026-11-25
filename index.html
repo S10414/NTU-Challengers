@@ -475,6 +475,14 @@
   .danger h3+.drow{border-top:0;padding-top:2px}
   .sver{font-size:12px;color:var(--ink-3);text-align:center;margin:20px 0 0}
 
+  /* ---------- v31 沒有照片的格子（習慣打卡、純文字）：淺色紙卡，不再是全黑 ---------- */
+  .frame.txt{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:3px;padding:10px;text-align:left}
+  .frame.txt .tk{position:absolute;left:9px;top:9px;width:20px;height:20px;border-radius:50%;background:var(--ink-2)}
+  .frame.txt .tk::after{content:'';position:absolute;left:7px;top:4px;width:5px;height:9px;border:solid var(--paper);border-width:0 1.8px 1.8px 0;transform:rotate(45deg)}
+  .frame.txt b{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--ink-2)}
+  .frame.txt em{font-style:normal;font-family:var(--serif);font-size:13px;line-height:1.45;color:var(--ink)}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -922,7 +930,7 @@ function frameHTML(k,t,full){
   const es=S.entries.filter(x=>x.date===k&&x.theme===t.k);
   if(!es.length) return `<button class="frame empty add" data-act="addpast" data-date="${k}" data-theme="${t.k}" aria-label="${esc(t.n)}：補一張照片"><span>${esc(t.n)}</span></button>`;
   const x=es.find(y=>y.moment)||es[es.length-1], n=es.length>1?`<i class="n">${es.length}</i>`:'';
-  if(!x.img) return `<button class="frame txt" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}">${esc((x.line||t.n).slice(0,24))}${n}</button>`;
+  if(!x.img) return `<button class="frame txt" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}">${t.k==='habit'?'<span class="tk" aria-hidden="true"></span>':''}<b>${esc(t.n)}</b>${x.line?`<em>${esc(x.line.slice(0,24))}</em>`:''}${n}</button>`;
   return `<button class="frame" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}，放大">${full?`<img src="${x.img}" alt="" decoding="async">`:''}${n}</button>`;
 }
 function stripsHTML(off,full){
@@ -2032,7 +2040,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v30';
+const APP_VER='v31';
 document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
