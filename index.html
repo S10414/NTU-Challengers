@@ -692,7 +692,7 @@ function habitSec(){
     if(last&&said&&Date.now()-last.ts>4*864e5){ const d=parseD(said.date); msg+=`<p class="hmsg muted">上次你寫：「${esc(said.line)}」<span class="hd">${d.getMonth()+1}/${d.getDate()}</span></p>` }
   }
   const r=habitRecap();
-  if(r) msg+=`<button class="link hrecap" data-act="hreview">最近 4 週，${r.hit!=null?`你有 ${r.hit} 週達成目標，`:''}「${esc(name)}」一共 ${r.total} 次。</button>`;
+  if(r&&r.total>0) msg+=`<button class="link hrecap" data-act="hreview">最近 4 週，${r.hit!=null?`你有 ${r.hit} 週達成目標，`:''}「${esc(name)}」一共 ${r.total} 次。</button>`;
   return `<div class="paper habit"><div class="hrow"><div><b>${esc(name)}</b><span class="hprog">${prog}</span></div>
     <button class="btn hadd" data-act="hlog">＋ ${esc(name)}</button></div>${msg}</div>`;
 }
@@ -803,9 +803,11 @@ function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.ge
 const DAYC=['一','二','三','四','五','六','日'];
 const todayIdx=()=>(new Date().getDay()+6)%7;
 /* 最早要顯示到哪一週：開始使用那天或最早一則紀錄，最多往回兩年 */
+const BACKFILL_DAYS=14;
 function minWeekOff(){
   const cur=weekStart(0).getTime();
-  let first=S.settings&&S.settings.since?parseD(S.settings.since).getTime():Date.now();
+  /* 往回多給 2 週：新使用者第一天就能從相簿補上過去的照片 */
+  let first=(S.settings&&S.settings.since?parseD(S.settings.since).getTime():Date.now())-BACKFILL_DAYS*864e5;
   if(S.entries.length) first=Math.min(first,S.entries[0].ts);
   const d=new Date(first); d.setHours(0,0,0,0); d.setDate(d.getDate()-(d.getDay()+6)%7);
   return Math.max(-104,Math.min(0,Math.round((d.getTime()-cur)/(7*864e5))));
@@ -928,6 +930,10 @@ function goWeek(dir){
 /* 和後端、提示詞一致：滿 8 則，且第一則到最後一則跨 7 天 */
 const MIN_ENTRIES=8, MIN_SPAN_DAYS=7;
 function spanDays(){ if(!S.entries.length) return 0; const ds=S.entries.map(e=>e.date).sort(); return Math.round((parseD(ds[ds.length-1])-parseD(ds[0]))/864e5)+1 }
+/* 還沒到門檻時，說清楚差多少（可以從「這週」補過去的照片，所以講「跨幾天」不講「再過幾天」） */
+function agentWaitMsg(){
+  return `顯影要 ${MIN_ENTRIES} 則、跨 ${MIN_SPAN_DAYS} 天的紀錄才會開始看。現在 ${S.entries.length} 則、${spanDays()} 天。`;
+}
 function agentReady(){ return S.entries.length>=MIN_ENTRIES&&spanDays()>=MIN_SPAN_DAYS }
 function rel(ts){ const h=(Date.now()-ts)/36e5; if(h<1)return'剛剛'; if(h<24)return`${Math.floor(h)} 小時前`; return`${Math.floor(h/24)} 天前` }
 const RX={interesting:'有意思',meh:'普通',wrong:'完全不對',yes:'有這回事',no:'不是這樣'};
@@ -941,7 +947,7 @@ function agentSec(){
       `<button class="btn" data-act="react" data-id="${m.id}" data-r="interesting">有意思</button><button class="btn" data-act="react" data-id="${m.id}" data-r="meh">普通</button><button class="btn" data-act="react" data-id="${m.id}" data-r="wrong">完全不對</button>`}</div>
     ${m.reply?`<div class="reply">${esc(m.reply)}</div>`:(m.reaction?`<textarea rows="1" placeholder="想補一句的話（可以不寫）" data-reply="${m.id}"></textarea><div style="margin-top:8px"><button class="link" data-act="reply" data-id="${m.id}">送出</button></div>`:'')}
   </div>`).join('');
-  const status=S.busy?'它在看':S.err?S.err:!ready?'顯影還在累積':(S.agentMeta.lastCheck?`上次看：${rel(S.agentMeta.lastCheck)}`:'');
+  const status=S.busy?'它在看':S.err?S.err:!ready?agentWaitMsg():(S.agentMeta.lastCheck?`上次看：${rel(S.agentMeta.lastCheck)}${S.agentMeta.lastSpoke===false?'，那次沒有想說的。再多記幾天看看。':''}`:'');
   return `<section class="agent-sec">${prints?`<h2>顯影</h2>${prints}`:''}
     <div class="agent-foot">${status?`<span class="status" style="font:inherit;color:inherit;margin:0">${esc(status)}</span>`:''}${can&&ready&&!S.busy?`<button class="link" data-act="check">讓它看一次</button>`:''}</div></section>`;
 }
@@ -950,7 +956,7 @@ function agentSec(){
 let capTimer=null;
 /* date：補某一天的照片（從拍貼格子進來）。補照片沒有倒數、不算時刻 */
 function openCap(theme,moment,pt,date){
-  S.cap={theme:theme||null,moment:!!moment&&!date,start:Date.now(),img:null,line:'',date:date||null,fromLib:false,shotAt:null,
+  S.cap={theme:theme||'daily',moment:!!moment&&!date,start:Date.now(),img:null,line:'',date:date||null,fromLib:false,shotAt:null,
     step:(!date&&CAM.ok())?'cam':'form',facing:'environment',camErr:''};
   fx.ov.show($('#ovCap'),pt?{from:pt}:{});
   renderCap();
@@ -1054,7 +1060,7 @@ function renderCap(){
   const camBtn=pastDay?'':CAM.ok()&&!c.noGUM?`<button class="camlab" data-act="camopen" style="width:100%">打開相機</button>`
     :`<label class="camlab">打開相機<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`;
   $('#capBody').innerHTML=`
-    <div class="top"><span id="cd" class="cd"></span><button class="link" data-act="capclose">先不要</button></div>
+    <div class="top">${c.date?'<span id="cd" class="cd"></span>':'<span></span>'}<button class="link" data-act="capclose">先不要</button></div>
     <p class="now">${c.date?(d=>`${d.getMonth()+1} 月 ${d.getDate()} 日`)(parseD(c.date)):'留下此刻'}</p><div class="latemsg" id="latemsg">${c.camErr?esc(c.camErr):''}</div>${c.camExt?`<p style="margin:-10px 0 16px"><a class="link" href="${esc(c.camExt)}">用預設瀏覽器打開</a></p>`:''}
     ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>
       <div class="again">${pastDay?'':CAM.ok()&&!c.noGUM?'<button class="link" data-act="camopen">重拍</button>':`<label class="link">重拍<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`}<label class="link">從相簿換一張<input type="file" accept="image/*" data-file="lib"></label></div>`
@@ -1883,7 +1889,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v26';
+const APP_VER='v27';
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!hadCtrl||reloading||S.cap) return; reloading=true; location.reload() });
