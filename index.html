@@ -483,6 +483,20 @@
   .frame.txt b{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--ink-2)}
   .frame.txt em{font-style:normal;font-family:var(--serif);font-size:13px;line-height:1.45;color:var(--ink)}
 
+  /* ---------- v32 留下此刻按鈕、打卡印章 ---------- */
+  .btn.capmain{background:var(--safe);border-color:var(--safe);color:#FFF8F2;height:64px;padding:0 20px;border-radius:20px;
+    font-size:18px;font-weight:600;letter-spacing:.14em;box-shadow:0 8px 20px rgba(120,52,32,.22)}
+  /* 這週：沒照片的習慣打卡 → 斜蓋的印章 */
+  .frame.stamp{background:rgba(217,145,126,.16);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;box-shadow:inset 0 0 0 1px rgba(217,145,126,.35)}
+  .frame.stamp .st{width:50px;height:50px;border-radius:50%;border:1.5px solid var(--safe);color:var(--safe);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transform:rotate(-10deg)}
+  .frame.stamp .st i{width:6px;height:11px;border:solid var(--safe);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px}
+  .frame.stamp .st b{font-size:10px;font-weight:600;letter-spacing:.06em}
+  .frame.stamp em{font-style:normal;font-family:var(--serif);font-size:11px;line-height:1.3;color:var(--ink-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 打卡卡片：補一張照片 */
+  .hphoto{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:var(--ink-2);-webkit-tap-highlight-color:transparent;transition:transform .38s var(--spring)}
+  .hphoto:active{transform:scale(.96);transition-duration:.08s}
+  .hphoto svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
@@ -758,7 +772,7 @@ function viewToday(){
   const list=S.entries.filter(e=>e.date===today&&!(e.theme==='habit'&&!e.img)).slice().reverse();   // 只點一下的習慣打卡已經在習慣卡片裡
   const top=st==='now'
     ?`<button class="moment now" data-act="cap" data-theme="daily" data-moment="1"><p class="t">現在</p><div class="s">留下此刻</div></button>`
-    :`<div class="row" style="margin:8px 0 22px"><button class="btn fill wide" data-act="cap">留下此刻</button></div>${st==='done'?'<p class="small muted" style="margin:-12px 0 18px">今天的時刻，留下了。</p>':''}`;
+    :`<div class="row" style="margin:8px 0 22px"><button class="btn fill wide capmain" data-act="cap">留下此刻</button></div>${st==='done'?'<p class="small muted" style="margin:-12px 0 18px">今天的時刻，留下了。</p>':''}`;
   return `${notices()}${top}${peerSec()}${habitSec()}${list.map(entryRow).join('')}${agentSec()}`;
 }
 function entryRow(e){
@@ -794,7 +808,8 @@ function habitSec(){
   if(just){
     const k=wk.findIndex(e=>e.id===just.id)+1;
     msg+=`<p class="hmsg">本週第 ${k||n} 次。</p>
-      ${just.line?`<p class="hsaid">${esc(just.line)}</p>`:`<div class="row2 hline"><input type="text" id="hLine" maxlength="40" placeholder="想寫感想再寫"><button class="btn" data-act="hline">存</button></div>`}`;
+      ${just.line?`<p class="hsaid">${esc(just.line)}</p>`:`<div class="row2 hline"><input type="text" id="hLine" maxlength="40" placeholder="想寫感想再寫"><button class="btn" data-act="hline">存</button></div>`}
+      ${just.img?'':`<button class="hphoto" data-act="hphoto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>想拍一張也可以</button>`}`;
   }
   if(g&&n>=g){
     msg+=`<p class="hmsg">這週的${n>g?` ${n} `:['','一','兩','三','四','五','六','七'][g]}次都留下來了。</p><div class="htiles">${wk.map(hTile).join('')}</div>`;
@@ -930,7 +945,8 @@ function frameHTML(k,t,full){
   const es=S.entries.filter(x=>x.date===k&&x.theme===t.k);
   if(!es.length) return `<button class="frame empty add" data-act="addpast" data-date="${k}" data-theme="${t.k}" aria-label="${esc(t.n)}：補一張照片"><span>${esc(t.n)}</span></button>`;
   const x=es.find(y=>y.moment)||es[es.length-1], n=es.length>1?`<i class="n">${es.length}</i>`:'';
-  if(!x.img) return `<button class="frame txt" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}">${t.k==='habit'?'<span class="tk" aria-hidden="true"></span>':''}<b>${esc(t.n)}</b>${x.line?`<em>${esc(x.line.slice(0,24))}</em>`:''}${n}</button>`;
+  if(!x.img&&t.k==='habit') return `<button class="frame stamp" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}，打卡${x.line?'：'+esc(x.line):''}"><span class="st"><i aria-hidden="true"></i><b>${esc(t.n)}</b></span>${x.line?`<em>${esc(x.line.slice(0,24))}</em>`:''}${n}</button>`;
+  if(!x.img) return `<button class="frame txt" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}"><b>${esc(t.n)}</b>${x.line?`<em>${esc(x.line.slice(0,24))}</em>`:''}${n}</button>`;
   return `<button class="frame" data-act="full" data-id="${x.id}" aria-label="${esc(t.n)}${x.line?'：'+esc(x.line):''}，放大">${full?`<img src="${x.img}" alt="" decoding="async">`:''}${n}</button>`;
 }
 function stripsHTML(off,full){
@@ -1176,7 +1192,7 @@ function renderCap(){
     ${c.img?`<div class="prev"><img src="${c.img}" alt=""></div>
       <div class="again">${pastDay?'':CAM.ok()&&!c.noGUM?'<button class="link" data-act="camopen">重拍</button>':`<label class="link">重拍<input type="file" accept="image/*" capture="environment" data-file="cam"></label>`}<label class="link">從相簿換一張<input type="file" accept="image/*" data-file="lib"></label></div>`
     :`<div class="camrow">${camBtn}<label class="camlab"${pastDay?' style="width:100%"':''}>從相簿選${pastDay?'這天拍的照片':''}<input type="file" accept="image/*" data-file="lib"></label></div>`}
-    <div class="chips">${chips}</div>
+    ${c.attach?`<p class="capnote">補在今天的「${esc(themeName('habit'))}」打卡上。</p>`:`<div class="chips">${chips}</div>`}
     ${c.theme==='people'?'<p class="capnote">拍到別人之前先問過對方，或避開正臉。</p>':''}
     <input class="line" placeholder="一句話就好。可以不寫。" maxlength="40" value="${esc(c.line)}" data-line="1">
     <button class="btn paper wide" data-act="capsave" ${c.theme?'':'disabled'}>留下</button>
@@ -1242,6 +1258,11 @@ async function photoURL(e){
 function forgetURL(id){ const u=fullURLs.get(id); if(u){ URL.revokeObjectURL(u); fullURLs.delete(id) } }
 async function saveCap(){
   const c=S.cap; if(!c||!c.theme) return;
+  if(c.attach){   // 習慣打卡補照片：加在原本那則上
+    const e=S.entries.find(x=>x.id===c.attach);
+    if(e){ if(c.img){ e.img=c.img; if(c.full) await putPhoto(e.id,c.full) } const v=c.line.trim(); if(v) e.line=v.slice(0,40); e.sync='pending'; await putEntry(e) }
+    closeCap(); setTimeout(()=>render(),260); syncSoon(); return;
+  }
   const now=new Date();
   let e;
   if(c.date){
@@ -1910,6 +1931,7 @@ document.addEventListener('click',async ev=>{
   switch(d.act){
     case 'obgoal':{ const ob=obState(); const h=$('#habit'); if(h) ob.habit=h.value; ob.goal=Number(d.n)||0; document.querySelectorAll('[data-act=obgoal]').forEach(b=>b.classList.toggle('on',b===a)); break }
     case 'hlog': await habitLog(); break;
+    case 'hphoto':{ if(!S.hJust) break; const r=a.getBoundingClientRect(); S.hLineDraft=(($('#hLine')||{}).value||''); openCap('habit',false,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); S.cap.attach=S.hJust; S.cap.line=S.hLineDraft; renderCap(); break }
     case 'hline':{ const v=(($('#hLine')||{}).value||'').trim(); const e=S.entries.find(x=>x.id===S.hJust); if(e&&v){ e.line=v.slice(0,40); e.sync='pending'; await putEntry(e); render(); syncSoon(); peerMaybe() } break }
     case 'hreview': openHabitReview(); break;
     case 'hclose': fx.ov.hide($('#ovHabit')); break;
@@ -2040,7 +2062,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v31';
+const APP_VER='v32';
 document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
