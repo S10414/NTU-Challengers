@@ -431,18 +431,62 @@
   nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px}
   nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
+  /* ---------- v30 月曆、設定移到右上角、設定分組 ---------- */
+  header.top{align-items:center}
+  header.top .hr{display:flex;align-items:center;gap:10px}
+  .gear{all:unset;cursor:pointer;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:var(--ink-2);-webkit-tap-highlight-color:transparent;transition:transform .38s var(--spring),background-color .2s}
+  .gear:active{transform:scale(.9);transition-duration:.08s}
+  .gear.on{background:var(--glass);color:var(--ink)}
+  .gear svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+  #navdot{transition:opacity .2s}
+  /* 月曆 */
+  .month{margin:0 0 30px}
+  .mhead{font-family:var(--serif);font-size:19px;font-weight:600;margin:0 0 12px}
+  .mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+  .mwk{margin-bottom:6px}
+  .mwk span{text-align:center;font-size:11px;color:var(--ink-3)}
+  .mday{all:unset;box-sizing:border-box;position:relative;aspect-ratio:3/4;border-radius:8px;background:rgba(243,226,214,.45);overflow:hidden;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .38s var(--spring)}
+  .mday:active:not(:disabled){transform:scale(.94);transition-duration:.08s}
+  .mday:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .mday img{width:100%;height:100%;object-fit:cover;display:block}
+  .mday .dn{position:absolute;left:5px;top:3px;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .mday.has .dn{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.55)}
+  .mday .mn{position:absolute;right:4px;bottom:4px;background:rgba(250,243,234,.92);color:var(--ink);font-size:10px;line-height:1.5;padding:0 5px;border-radius:999px}
+  .mday.dot::after{content:'';position:absolute;left:50%;bottom:8px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--ink-2)}
+  .mday.td{box-shadow:inset 0 0 0 1.5px var(--ink)}
+  .mday.off{opacity:.35;cursor:default}
+  /* 設定：分組面板 */
+  #view.v-settings .sgrp{margin:16px 0 0;padding:14px 16px;background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:var(--r-card)}
+  #view.v-settings .sgrp h3{font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ink-3);margin:0 0 10px}
+  #view.v-settings .sgrp p{font-size:14px;line-height:1.75;color:var(--ink-2);margin:0 0 10px}
+  #view.v-settings .slabel{color:var(--ink);margin:4px 0 8px}
+  #view.v-settings .sgrp .chips{margin-bottom:4px}
+  .srow{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;padding:12px 0;border-top:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sgrp h3+.srow,.sgrp span[hidden]+.srow{border-top:0;padding-top:2px}
+  .srow b{display:block;font-weight:500;font-size:15px;color:var(--ink)}
+  .srow small{display:block;font-size:12px;line-height:1.6;color:var(--ink-2);margin-top:2px}
+  .sw{flex:none;width:44px;height:26px;border-radius:999px;background:rgba(43,33,28,.2);position:relative;transition:background-color .2s}
+  .sw::after{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .32s var(--spring)}
+  .sw.on{background:var(--ink)}
+  .sw.on::after{transform:translateX(18px)}
+  .chev{font-style:normal;font-size:22px;line-height:1;color:var(--ink-3)}
+  .danger .drow{all:unset;box-sizing:border-box;display:block;width:100%;padding:12px 0;border-top:1px solid var(--line);color:#A8432C;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .danger h3+.drow{border-top:0;padding-top:2px}
+  .sver{font-size:12px;color:var(--ink-3);text-align:center;margin:20px 0 0}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
 </style>
 </head>
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div id="app">
-  <header class="top"><h1>Revela</h1><span class="date" id="hdate"></span></header>
+  <header class="top"><h1>Revela</h1><div class="hr"><span class="date" id="hdate"></span><button class="gear" id="gear" data-act="nav" data-v="settings" aria-label="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div></header>
   <main id="view"></main>
   <nav class="tabs" id="tabs">
     <button data-act="nav" data-v="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>今天</button>
     <button data-act="nav" data-v="week"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>這週</button>
-    <button data-act="nav" data-v="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>設定</button>
+    <button data-act="nav" data-v="month"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>月曆</button>
     <i id="navdot" aria-hidden="true"></i>
   </nav>
 </div>
@@ -572,8 +616,9 @@ function render(o){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
   if(!o.nav&&dotView!==S.view&&fx.navDot(S.view,true)) dotView=S.view;
   $('#view').className='v-'+S.view;
-  if(!['today','week','settings'].includes(S.view)) S.view='today';
-  $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():viewSettings();
+  if(!['today','week','month','settings'].includes(S.view)) S.view='today';
+  $('#gear').classList.toggle('on',S.view==='settings'); $('#navdot').style.opacity=S.view==='settings'?0:'';
+  $('#view').innerHTML = S.view==='today'?viewToday():S.view==='week'?viewWeek():S.view==='month'?viewMonth():viewSettings();
   if(S.view==='week') mountBooth();
   if(o.enter) fx.enter($('#view'));
   fx.pulse(S.busy&&S.view==='today'?$('#view .status'):null);
@@ -1672,7 +1717,7 @@ function bkHTML(){
   const total=S.entries.length, done=S.entries.filter(e=>e.sync==='done').length;
   const st=SB.busy?'備份中…':SB.err?SB.err:(done===total?`已備份 ${total} 則`:`已備份 ${done}／${total} 則`)+(SB.last&&!SB.busy&&!SB.err?` · ${rel(SB.last)}同步`:'');
   const status=`<p class="st ${SB.err?'err':''}">${isAnon()?'':`${esc(SB.user.email||'')} · `}${esc(st)}</p>`;
-  const links=`<div class="linkrow"><button class="link" data-act="sbsync" ${SB.busy?'disabled':''}>立即同步</button>${isAnon()?'':'<button class="link" data-act="sbout">登出</button>'}${sw(false)}<button class="link" data-act="sbwipe">刪除雲端資料</button></div>`;
+  const links=`<div class="linkrow"><button class="link" data-act="sbsync" ${SB.busy?'disabled':''}>立即同步</button>${isAnon()?'':'<button class="link" data-act="sbout">登出</button>'}${sw(false)}</div>`;
   if(isAnon()) return `<h3>備份</h3>${status}
     <div style="margin:14px 0 4px">${emailForm('綁定 email（選填）','換手機時用來找回照片。')}</div>${links}`;
   return `<h3>備份</h3>${status}${links}`;
@@ -1759,22 +1804,60 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&SB.user&
 
 /* ---------- 設定 ---------- */
 function openSettings(){ if(S.view!=='settings'){ S.view='settings'; render({enter:true,nav:true}); dotView='settings'; fx.nav('settings') } }
+/* ---------- 月曆 ----------
+   每天一格放那天的照片（優先放時刻那張），最新的月份在最上面。
+   點有紀錄的日子 → 跳到「這週」的那一天；點沒拍的過去日子 → 補一張；今天沒拍 → 直接拍 */
+function monthFirstDate(){
+  let first=(S.settings&&S.settings.since?parseD(S.settings.since).getTime():Date.now())-BACKFILL_DAYS*864e5;
+  if(S.entries.length) first=Math.min(first,S.entries[0].ts);
+  const d=new Date(first); d.setHours(0,0,0,0); return d;
+}
+function dayCover(es){ const ph=es.filter(e=>e.img); return ph.find(e=>e.moment)||ph[ph.length-1]||null }
+function viewMonth(){
+  const byDate={}; for(const e of S.entries) (byDate[e.date]=byDate[e.date]||[]).push(e);
+  const first=monthFirstDate(), firstKey=dkey(first), now=new Date(), today=dkey(now), months=[];
+  let y=now.getFullYear(), m=now.getMonth();
+  while(y>first.getFullYear()||(y===first.getFullYear()&&m>=first.getMonth())){ months.push([y,m]); if(--m<0){ m=11; y-- } }
+  return months.map(([y,m])=>{
+    const lead=(new Date(y,m,1).getDay()+6)%7, n=new Date(y,m+1,0).getDate();
+    let cells='<i></i>'.repeat(lead);
+    for(let i=1;i<=n;i++){
+      const k=dkey(new Date(y,m,i)), es=byDate[k]||[], c=dayCover(es), off=k>today||k<firstKey, nPh=es.filter(e=>e.img).length;
+      const cls=['mday',c&&'has',es.length&&!c&&'dot',k===today&&'td',off&&'off'].filter(Boolean).join(' ');
+      cells+=`<button class="${cls}" data-act="mday" data-date="${k}" ${off?'disabled':''} aria-label="${m+1}月${i}日${es.length?`，${es.length} 則`:''}">${c?`<img src="${c.img}" alt="" loading="lazy">`:''}<span class="dn">${i}</span>${nPh>1?`<span class="mn">${nPh}</span>`:''}</button>`;
+    }
+    return `<section class="month"><h2 class="mhead">${y} 年 ${m+1} 月</h2>
+      <div class="mgrid mwk">${DAYC.map(c=>`<span>${c}</span>`).join('')}</div><div class="mgrid">${cells}</div></section>`;
+  }).join('');
+}
+function openDay(dateKey){
+  const D=parseD(dateKey), mon=new Date(D); mon.setDate(D.getDate()-(D.getDay()+6)%7);
+  S.weekOff=Math.round((mon.getTime()-weekStart(0).getTime())/(7*864e5)); S.dayIdx=(D.getDay()+6)%7;
+  S.view='week'; render({enter:true,nav:true}); dotView='week'; fx.nav('week');
+}
+/* ---------- 設定 ---------- */
+function swRow(act,label,on,sub){ return `<button class="srow" data-act="${act}" role="switch" aria-checked="${on?'true':'false'}"><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span><i class="sw ${on?'on':''}"></i></button>` }
 function viewSettings(){
   const st=S.settings||{};
   return `<h2>設定</h2>
-    <div class="grp"><h3>習慣主題</h3>
+    <section class="sgrp"><h3>記錄</h3>
+      <p class="slabel">習慣名稱</p>
       <div class="row2"><input type="text" id="setHabit" maxlength="8" placeholder="習慣名稱" value="${esc(st.habit||'')}"><button class="btn" data-act="setsave">存起來</button></div>
       <p id="setMsg" class="small muted"></p>
-      <p style="margin:6px 0 8px">節奏</p><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${goalN()===n?'on':''}" data-act="goal" data-n="${n}">${n?`每週 ${n} 次`:'隨手記'}</button>`).join('')}</div></div>
-    <div class="grp"><h3>一句話交換</h3><p>拍完後問你今天想收到什麼，隔天收到另一個人寫的一句話。</p>
-      <div class="linkrow"><button class="link" data-act="peertoggle">${peerOn()?'開著':'關著'}・點一下${peerOn()?'關掉':'打開'}</button>${peerOn()?'<button class="link" data-act="peeropen">現在就要</button>':''}</div></div>
-    <div class="grp bk" id="bkGrp">${bkHTML()}</div>
-    <div class="grp" id="studyGrp">${studyHTML()}</div>
-    <div class="grp"><h3>動態</h3>
-      <div class="linkrow"><button class="link" data-act="calm">簡化動畫：${st.calm?'開':'關'}</button>${fx.tiltSupported?`<button class="link" data-act="tilt">傾斜互動：${st.tilt?'開':'關'}</button>`:''}</div></div>
-    <div class="grp"><h3>資料</h3><span id="dataNote" hidden></span>
-      <div class="linkrow"><button class="link" data-act="export">匯出</button><button class="link" data-act="reset">清掉手機上的紀錄</button><button class="link" data-act="delacct">刪除帳號</button></div></div>
-    <div class="grp"><p style="font-size:12px;opacity:.6">版本 ${APP_VER}</p></div>`;
+      <p class="slabel">節奏</p><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${goalN()===n?'on':''}" data-act="goal" data-n="${n}">${n?`每週 ${n} 次`:'隨手記'}</button>`).join('')}</div></section>
+    <section class="sgrp" id="studyGrp">${studyHTML()}</section>
+    <section class="sgrp bk" id="bkGrp">${bkHTML()}</section>
+    <section class="sgrp"><h3>其他</h3><span id="dataNote" hidden></span>
+      ${swRow('peertoggle','一句話交換',peerOn(),'拍完後問你今天想收到什麼，隔天收到另一個人寫的一句話。')}
+      ${peerOn()?'<div class="linkrow" style="margin:0 0 10px"><button class="link" data-act="peeropen">現在就要</button></div>':''}
+      ${swRow('calm','簡化動畫',!!st.calm)}
+      ${fx.tiltSupported?swRow('tilt','傾斜互動',!!st.tilt):''}
+      <button class="srow" data-act="export"><span><b>匯出紀錄</b><small>存成一個檔案，可以自己保存。</small></span><i class="chev">›</i></button></section>
+    <section class="sgrp danger"><h3>刪除</h3>
+      <button class="drow" data-act="reset">清掉手機上的紀錄</button>
+      ${SB.client&&SB.user?'<button class="drow" data-act="sbwipe">刪除雲端資料</button>':''}
+      <button class="drow" data-act="delacct">刪除帳號</button></section>
+    <p class="sver">版本 ${APP_VER}</p>`;
 }
 
 /* ---------- 顯影：觀察者 ---------- */
@@ -1858,6 +1941,8 @@ document.addEventListener('click',async ev=>{
     case 'capsave': S.cap.line=$('[data-line]').value; await saveCap(); break;
     case 'open':{ const r=a.getBoundingClientRect(); openEntry(d.id,{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)}); break }
     case 'wday': goDay(Number(d.i)); break;
+    case 'mday':{ const k=d.date, r=a.getBoundingClientRect(), pt={x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};
+      if(S.entries.some(e=>e.date===k)) openDay(k); else if(k===dkey(new Date())) openCap('daily',false,pt); else openCap('daily',false,pt,k); break }
     case 'full': openFull(d.id,a); break;
     case 'fullsib': openFull(d.id); break;
     case 'fullclose': closeFull(); break;
@@ -1947,7 +2032,7 @@ setInterval(async()=>{
 },20000);
 
 /* 新版上線時自動換：背景回來會檢查一次，新的 Service Worker 接手後重新載入（拍照中不打斷） */
-const APP_VER='v29';
+const APP_VER='v30';
 document.addEventListener('touchstart',()=>{},{passive:true});
 if('serviceWorker' in navigator){
   const hadCtrl=!!navigator.serviceWorker.controller; let reloading=false, swReg=null;
